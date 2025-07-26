@@ -1,0 +1,56 @@
+[
+  {
+    "id": "txn-1",
+    "account_id": "account-1",
+    "amount": 12.50,
+    "category": "Food & Dining",
+    "date": "2024-01-15T12:30:00.000Z",
+    "context": "Quick lunch at the office cafeteria"
+  },
+  {
+    "id": "txn-2",
+    "account_id": "account-1",
+    "amount": 85.00,
+    "category": "Groceries",
+    "date": "2024-01-16T10:15:00.000Z",
+    "context": "Weekly grocery shopping for the family"
+  },
+  {
+    "id": "txn-3",
+    "account_id": "account-1",
+    "amount": 25.75,
+    "category": "Food & Dining",
+    "date": "2024-01-16T19:45:00.000Z",
+    "context": "Dinner with colleagues after work meeting"
+  },
+  {
+    "id": "txn-4",
+    "account_id": "account-1",
+    "amount": 45.00,
+    "category": "Transportation",
+    "date": "2024-01-17T08:00:00.000Z"
+  },
+  {
+    "id": "txn-5",
+    "account_id": "account-1",
+    "amount": 18.90,
+    "category": "Food & Dining",
+    "date": "2024-01-17T13:20:00.000Z",
+    "context": "Lunch meeting with a client"
+  },
+  {
+    "id": "txn-6",
+    "account_id": "account-1",
+    "amount": 120.00,
+    "category": "Entertainment",
+    "date": "2024-01-18T20:00:00.000Z",
+    "context": "Movie night with friends at the cinema"
+  },
+  {
+    "id": "txn-7",
+    "account_id": "account-1",
+    "amount": 32.40,
+    "category": "Food & Dining",
+    "date": "2024-01-19T12:15:00.000Z"
+  }
+]
