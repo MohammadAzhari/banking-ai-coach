@@ -46,42 +46,35 @@ src/
         └── routes.ts        # AI endpoints
 ```
 
-## Setup
+## Quick Start
+
+For detailed setup instructions and API examples, see:
+- **[Curl Examples](docs/curl-examples.md)** - Ready-to-use curl commands
+
+### Basic Setup
 
 1. **Install dependencies**:
    ```bash
    npm install
    ```
 
-2. **Start PostgreSQL database**:
+2. **Environment setup**:
    ```bash
-   docker-compose up -d
+   # Create .env file with database and OpenAI API key
+   DATABASE_URL="postgresql://postgres:password@localhost:5432/banking_ai_coach?schema=public"
+   OPENAI_API_KEY="your-openai-api-key"
    ```
 
-3. **Configure AWS Bedrock**:
-   - Copy `.env.example` to `.env`
-   - Add your AWS credentials and region
-   ```bash
-   cp .env.example .env
-   ```
-
-4. **Generate Prisma client**:
+3. **Database setup**:
    ```bash
    npm run db:generate
-   ```
-
-5. **Push database schema**:
-   ```bash
    npm run db:push
+   npm run db:seed  # Creates test user and sample data
    ```
 
-6. **Start the application**:
+4. **Start development server**:
    ```bash
-   # Development mode with auto-reload
-   npm run dev
-   
-   # Production mode
-   npm start
+   npm run watch
    ```
 
 ## Database Schema

@@ -36,9 +36,7 @@ router.post('/', async (req: Request, res: Response) => {
       });
     }
 
-    // TODO: Get userId from authentication context
-    // For now, using a hardcoded user ID
-    const userId = 'default-user-id';
+    const userId = res.locals.userId;
 
     const transaction = await transactionService.createTransaction(userId, {
       amount,
@@ -54,40 +52,6 @@ router.post('/', async (req: Request, res: Response) => {
 
   } catch (error) {
     console.error('Error creating transaction:', error);
-    res.status(500).json({ 
-      error: 'Internal server error' 
-    });
-  }
-});
-
-// GET /transactions
-router.get('/', async (req: Request, res: Response) => {
-  try {
-    const transactions = await transactionService.getTransactions();
-    res.json(transactions);
-  } catch (error) {
-    console.error('Error fetching transactions:', error);
-    res.status(500).json({ 
-      error: 'Internal server error' 
-    });
-  }
-});
-
-// GET /transactions/:id
-router.get('/:id', async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
-    const transaction = await transactionService.getTransactionById(id);
-    
-    if (!transaction) {
-      return res.status(404).json({ 
-        error: 'Transaction not found' 
-      });
-    }
-
-    res.json(transaction);
-  } catch (error) {
-    console.error('Error fetching transaction:', error);
     res.status(500).json({ 
       error: 'Internal server error' 
     });

@@ -1,6 +1,8 @@
 import { Transaction } from '@prisma/client'
 import { prisma } from '../../configs/db';
 import { CreateTransactionRequest } from './types';
+import aiService from '../ai/service';
+import messageService from '../messages/service';
 
 class TransactionService {
 
@@ -76,12 +78,22 @@ class TransactionService {
   }
 
   private async requestContextInBackground(transactionId: string): Promise<void> {
-    // Background process to request more context
-    // This could trigger AI-generated questions or notifications
-    console.log(`Background: Requesting context for transaction ${transactionId}`);
-    
-    // TODO: Implement AI service integration for context questions
-    // TODO: Implement notification system
+    try {
+      console.log(`Background: Requesting context for transaction ${transactionId}`);
+      
+      const aiResponse = await aiService.generateContextQuestionForTransaction(transactionId);
+      
+      if (aiResponse) {
+        // TODO: need to get user whatsapp/phone id from db
+        // Send the content message (options can be used for interactive responses)
+        await messageService.sendMessage(aiResponse.content);
+      } else {
+        console.log(`No AI response generated for transaction ${transactionId}`);
+      }
+
+    } catch (error) {
+      console.error(`Error in requestContextInBackground for transaction ${transactionId}:`, error);
+    }
   }
 }
 
