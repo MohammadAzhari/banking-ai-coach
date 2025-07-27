@@ -104,6 +104,51 @@ curl -X POST http://localhost:3000/reports \
   -H "user-id: 550e8400-e29b-41d4-a716-446655440000"
 ```
 
+## Test Conversation Flow
+
+### 1. Create a transaction (triggers AI conversation)
+```bash
+curl -X POST http://localhost:3000/transactions \
+  -H "Content-Type: application/json" \
+  -H "user-id: 550e8400-e29b-41d4-a716-446655440000" \
+  -d '{
+    "amount": 45.99,
+    "category": "food",
+    "type": "DEBIT",
+    "storeName": "Starbucks"
+  }'
+```
+
+### 2. Send follow-up message (related to transaction)
+```bash
+curl -X POST http://localhost:3000/messages \
+  -H "Content-Type: application/json" \
+  -H "user-id: 550e8400-e29b-41d4-a716-446655440000" \
+  -d '{
+    "text": "It was for a business meeting with my client"
+  }'
+```
+
+### 3. Send unrelated message
+```bash
+curl -X POST http://localhost:3000/messages \
+  -H "Content-Type: application/json" \
+  -H "user-id: 550e8400-e29b-41d4-a716-446655440000" \
+  -d '{
+    "text": "Can you show me my spending report?"
+  }'
+```
+
+### 4. Send message when no open conversations
+```bash
+curl -X POST http://localhost:3000/messages \
+  -H "Content-Type: application/json" \
+  -H "user-id: 550e8400-e29b-41d4-a716-446655440000" \
+  -d '{
+    "text": "Hello, I need help with my finances"
+  }'
+```
+
 ## Test Multiple Categories
 ```bash
 # Food

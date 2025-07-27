@@ -15,10 +15,11 @@ router.post('/', async (req: Request, res: Response) => {
       });
     }
 
-    await messageService.onReceiveMessage(text.trim());
+    const userId = res.locals.userId;
+    await messageService.onReceiveMessage(userId, text.trim());
 
     res.status(201).json({
-      message: 'Message sent successfully. Processing initiated in background.'
+      message: 'Message received and processed successfully.'
     });
 
   } catch (error) {

@@ -31,6 +31,7 @@ model Transaction {
   context              String?
   isConversationClosed Boolean         @default(false) @map("is_conversation_closed")
   isReported           Boolean         @default(false) @map("is_reported")
+  latestResponseId     String?         @map("latest_response_id")
   
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   
