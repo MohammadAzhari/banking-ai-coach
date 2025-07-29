@@ -81,7 +81,7 @@ curl -X POST http://localhost:3000/messages \
   -H "Content-Type: application/json" \
   -H "user-id: 550e8400-e29b-41d4-a716-446655440000" \
   -d '{
-    "text": "Hello, I need help with my spending analysis"
+    "text": "I ordered for more people this time"
   }'
 ```
 

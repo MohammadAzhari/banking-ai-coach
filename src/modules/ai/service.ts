@@ -50,14 +50,24 @@ class AIService {
         })
       ]);
 
-      const systemPrompt = `You are a friendly AI banking assistant. Generate a personalized response for a user after they made a debit transaction.
+      const systemPrompt = `You are a friendly AI banking assistant. Your goal is to gather context about WHY and HOW the user made this transaction to better understand their spending patterns.
 
         Guidelines:
-        - Be friendly and supportive
-        - Provide relevant insights based on their transaction history
-        - Make options specific to the transaction and category
-        - Keep the content concise but engaging
-        - Focus on helping them understand their spending better`;
+        - Be friendly, curious, and conversational
+        - Ask about the PURPOSE, OCCASION, or REASON behind the transaction
+        - Compare with their spending history to create personalized insights
+        - Generate options that help uncover the story behind the purchase
+        - Focus on understanding the context: was it planned/unplanned, social/personal, special occasion, etc.
+        - Be creative with options that relate to the specific transaction type and amount
+
+        Example:
+        If user spent $45 at "Pizza Palace" (20% more than usual $38 average):
+        Content: "I noticed you visited Pizza Palace again! This time you spent $45, which is about 20% more than your usual $38 there. I'm curious about what made this visit special?"
+        Options: ["I was with friends this time", "Tried their new premium menu", "Ordered extra for family", "It was a celebration"]
+
+        Another example for $120 at "Target" (first time this month):
+        Content: "Great to see you shopping at Target! $120 is quite a haul. I'd love to know what brought you there today?"
+        Options: ["Monthly household essentials", "Back-to-school shopping", "Home improvement project", "Unexpected need came up"]`;
 
       const userPrompt = `User just made a transaction:
         - Amount: $${transaction.amount}
@@ -97,13 +107,8 @@ class AIService {
 
       if (!content) return null;
 
-      try {
-        const parsedContent = JSON.parse(content);
-        return {...parsedContent, responseId: response.id};
-      } catch (error) {
-        console.error('Error parsing response content:', error);
-        return null;
-      }
+      const parsedContent = JSON.parse(content);
+      return {...parsedContent, responseId: response.id};
     } catch (error) {
       console.error('Error generating context question:', error);
       return null;
@@ -125,7 +130,7 @@ class AIService {
 
         Your task is to:
         1. Determine if the message is related to the transaction
-        2. Extract meaningful context from the user's message
+        2. Extract meaningful context from the user's message make it more like the user input message, but a bit more detailed
         3. Decide if you need more information or if the conversation can be closed
         4. Provide an appropriate response
 
@@ -141,8 +146,8 @@ class AIService {
           "needFurtherInfo": true/false,
           "context": "Extracted context from user message",
           "response": {
-            "content": "Your response message",
-            "options": ["Option 1", "Option 2"]
+            "content": "Your response message", // if not need further info, provide a response message like "Got it, Thanks!"
+            "options": ["Option 1", "Option 2"] // Optional - provide options only if you need more information
           }
         }`;
 
@@ -163,16 +168,16 @@ class AIService {
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
         ],
-        temperature: 0.7,
+        temperature: 0.3,
+        previous_response_id: transaction.latestResponseId,
         store: true,
       });
 
       const content = response.output_text;
       if (!content) return null;
 
-      try {
-        const parsedContent = JSON.parse(content);
-        return {
+      const parsedContent = JSON.parse(content);
+      return {
           isRelated: parsedContent.isRelated,
           needFurtherInfo: parsedContent.needFurtherInfo,
           context: parsedContent.context || '',
@@ -182,95 +187,8 @@ class AIService {
             responseId: response.id
           }
         };
-      } catch (error) {
-        console.error('Error parsing context extraction response:', error);
-        return null;
-      }
     } catch (error) {
       console.error('Error extracting context from message:', error);
-      return null;
-    }
-  }
-
-  async evaluateMessageForTransaction(transactionId: string, userMessage: string, latestResponseId: string): Promise<{ isRelated: boolean; response?: { content: string; options: string[]; responseId: string }; shouldClose?: boolean } | null> {
-    try {
-      const transaction = await prisma.transaction.findUnique({
-        where: { id: transactionId },
-        include: { user: true }
-      });
-
-      if (!transaction) {
-        return null;
-      }
-
-      const systemPrompt = `You are a financial AI assistant evaluating a user's follow-up message to a previous transaction conversation.
-
-        Your task is to:
-        1. Determine if the user's message is related to the previous transaction conversation
-        2. If related, provide an appropriate response and determine if the conversation should be closed
-        3. If not related, indicate it's a new conversation
-
-        Guidelines:
-        - Be helpful and understanding
-        - If the user provides context about the transaction, acknowledge it and ask if there's anything else
-        - If the user asks for help or has questions, provide relevant assistance
-        - Close the conversation if the user seems satisfied or says goodbye
-        - Mark as unrelated if the message is about a completely different topic
-
-        Return the response in the following format:
-        {
-          "isRelated": true/false,
-          "content": "Your response message (only if related)",
-          "options": ["Option 1", "Option 2"] // 1-3 options (only if related and not closing)
-          "shouldClose": true/false // whether to close this conversation
-        }`;
-
-      const userPrompt = `Previous transaction details:
-        - Amount: $${transaction.amount}
-        - Category: ${transaction.category}
-        - Store: ${transaction.storeName || 'Not specified'}
-        - Date: ${transaction.date.toDateString()}
-        - Previous context: ${transaction.context || 'None'}
-        - Response ID: ${latestResponseId}
-
-        User's new message: "${userMessage}"
-
-        Evaluate if this message is related to the transaction conversation and provide an appropriate response.`;
-
-      const response = await this.openai.responses.parse({
-        model: 'gpt-4o-mini',
-        input: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt }
-        ],
-        temperature: 0.7,
-        store: true,
-      });
-
-      const content = response.output_text;
-      if (!content) return null;
-
-      try {
-        const parsedContent = JSON.parse(content);
-        if (parsedContent.isRelated && parsedContent.content) {
-          return {
-            isRelated: true,
-            response: {
-              content: parsedContent.content,
-              options: parsedContent.options || [],
-              responseId: response.id
-            },
-            shouldClose: parsedContent.shouldClose || false
-          };
-        } else {
-          return { isRelated: false };
-        }
-      } catch (error) {
-        console.error('Error parsing evaluation response:', error);
-        return null;
-      }
-    } catch (error) {
-      console.error('Error evaluating message for transaction:', error);
       return null;
     }
   }
