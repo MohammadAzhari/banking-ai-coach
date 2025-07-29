@@ -1,5 +1,6 @@
-import OpenAI from 'openai';
-import { prisma } from '../../configs/db';
+import OpenAI from "openai";
+import { prisma } from "../../configs/db";
+import { Transaction, Report } from "@prisma/client";
 
 class AIService {
   private openai: OpenAI;
@@ -10,45 +11,54 @@ class AIService {
     });
   }
 
-  async generateContextQuestionForTransaction(transactionId: string): Promise<{ content: string; options: string[], responseId: string } | null> {
+  async generateContextQuestionForTransaction(
+    transactionId: string
+  ): Promise<{
+    content: string;
+    options: string[];
+    responseId: string;
+  } | null> {
     try {
       const transaction = await prisma.transaction.findUnique({
         where: { id: transactionId },
-        include: { user: true }
+        include: { user: true },
       });
 
-      if (!transaction || transaction.type !== 'DEBIT') {
+      if (!transaction || transaction.type !== "DEBIT") {
         return null;
       }
 
-      const [categoryTransactions, storeTransactions, recentTransactions] = await Promise.all([
-        prisma.transaction.findMany({
-          where: {
-            userId: transaction.userId,
-            category: transaction.category,
-            id: { not: transactionId }
-          },
-          orderBy: { date: 'desc' },
-          take: 3
-        }),
-        transaction.storeName ? prisma.transaction.findMany({
-          where: {
-            userId: transaction.userId,
-            storeName: transaction.storeName,
-            id: { not: transactionId }
-          },
-          orderBy: { date: 'desc' },
-          take: 3
-        }) : [],
-        prisma.transaction.findMany({
-          where: {
-            userId: transaction.userId,
-            id: { not: transactionId }
-          },
-          orderBy: { date: 'desc' },
-          take: 3
-        })
-      ]);
+      const [categoryTransactions, storeTransactions, recentTransactions] =
+        await Promise.all([
+          prisma.transaction.findMany({
+            where: {
+              userId: transaction.userId,
+              category: transaction.category,
+              id: { not: transactionId },
+            },
+            orderBy: { date: "desc" },
+            take: 3,
+          }),
+          transaction.storeName
+            ? prisma.transaction.findMany({
+                where: {
+                  userId: transaction.userId,
+                  storeName: transaction.storeName,
+                  id: { not: transactionId },
+                },
+                orderBy: { date: "desc" },
+                take: 3,
+              })
+            : [],
+          prisma.transaction.findMany({
+            where: {
+              userId: transaction.userId,
+              id: { not: transactionId },
+            },
+            orderBy: { date: "desc" },
+            take: 3,
+          }),
+        ]);
 
       const systemPrompt = `You are a friendly AI banking assistant. Your goal is to gather context about WHY and HOW the user made this transaction to better understand their spending patterns.
 
@@ -72,17 +82,46 @@ class AIService {
       const userPrompt = `User just made a transaction:
         - Amount: $${transaction.amount}
         - Category: ${transaction.category}
-        - Store: ${transaction.storeName || 'Not specified'}
+        - Store: ${transaction.storeName || "Not specified"}
         - Current Balance: $${transaction.user.balance}
 
         Recent transactions in same category (${transaction.category}):
-        ${categoryTransactions.map(t => `- $${t.amount} at ${t.storeName || 'Unknown'} on ${t.date.toDateString()}`).join('\n') || 'None found'}
+        ${
+          categoryTransactions
+            .map(
+              (t) =>
+                `- $${t.amount} at ${
+                  t.storeName || "Unknown"
+                } on ${t.date.toDateString()}`
+            )
+            .join("\n") || "None found"
+        }
 
-        ${transaction.storeName ? `Recent transactions at ${transaction.storeName}:
-        ${storeTransactions.map(t => `- $${t.amount} for ${t.category} on ${t.date.toDateString()}`).join('\n') || 'None found'}` : ''}
+        ${
+          transaction.storeName
+            ? `Recent transactions at ${transaction.storeName}:
+        ${
+          storeTransactions
+            .map(
+              (t) =>
+                `- $${t.amount} for ${t.category} on ${t.date.toDateString()}`
+            )
+            .join("\n") || "None found"
+        }`
+            : ""
+        }
 
         Recent overall transactions:
-        ${recentTransactions.map(t => `- $${t.amount} for ${t.category} at ${t.storeName || 'Unknown'} on ${t.date.toDateString()}`).join('\n') || 'None found'}
+        ${
+          recentTransactions
+            .map(
+              (t) =>
+                `- $${t.amount} for ${t.category} at ${
+                  t.storeName || "Unknown"
+                } on ${t.date.toDateString()}`
+            )
+            .join("\n") || "None found"
+        }
 
         Generate a friendly message with context questions for this transaction.
         
@@ -94,10 +133,10 @@ class AIService {
         `;
 
       const response = await this.openai.responses.parse({
-        model: 'gpt-4o-mini',
+        model: "gpt-4o-mini",
         input: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt }
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
         ],
         temperature: 0.7,
         store: true,
@@ -108,18 +147,26 @@ class AIService {
       if (!content) return null;
 
       const parsedContent = JSON.parse(content);
-      return {...parsedContent, responseId: response.id};
+      return { ...parsedContent, responseId: response.id };
     } catch (error) {
-      console.error('Error generating context question:', error);
+      console.error("Error generating context question:", error);
       return null;
     }
   }
 
-  async extractContextFromMessage(transactionId: string, userMessage: string): Promise<{ isRelated: boolean; needFurtherInfo: boolean; context: string; response: { content: string; options: string[]; responseId: string } } | null> {
+  async extractContextFromMessage(
+    transactionId: string,
+    userMessage: string
+  ): Promise<{
+    isRelated: boolean;
+    needFurtherInfo: boolean;
+    context: string;
+    response: { content: string; options: string[]; responseId: string };
+  } | null> {
     try {
       const transaction = await prisma.transaction.findUnique({
         where: { id: transactionId },
-        include: { user: true }
+        include: { user: true },
       });
 
       if (!transaction) {
@@ -147,26 +194,25 @@ class AIService {
           "context": "Extracted context from user message",
           "response": {
             "content": "Your response message", // if not need further info, provide a response message like "Got it, Thanks!"
-            "options": ["Option 1", "Option 2"] // Optional - provide options only if you need more information
           }
         }`;
 
       const userPrompt = `Transaction details:
         - Amount: $${transaction.amount}
         - Category: ${transaction.category}
-        - Store: ${transaction.storeName || 'Not specified'}
+        - Store: ${transaction.storeName || "Not specified"}
         - Date: ${transaction.date.toDateString()}
-        - Previous context: ${transaction.context || 'None'}
+        - Previous context: ${transaction.context || "None"}
 
         User's message: "${userMessage}"
 
         Extract context and determine if more information is needed.`;
 
       const response = await this.openai.responses.parse({
-        model: 'gpt-4o-mini',
+        model: "gpt-4o-mini",
         input: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt }
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
         ],
         temperature: 0.3,
         previous_response_id: transaction.latestResponseId,
@@ -178,17 +224,296 @@ class AIService {
 
       const parsedContent = JSON.parse(content);
       return {
-          isRelated: parsedContent.isRelated,
-          needFurtherInfo: parsedContent.needFurtherInfo,
-          context: parsedContent.context || '',
-          response: {
-            content: parsedContent.response.content,
-            options: parsedContent.response.options || [],
-            responseId: response.id
-          }
-        };
+        isRelated: parsedContent.isRelated,
+        needFurtherInfo: parsedContent.needFurtherInfo,
+        context: parsedContent.context || "",
+        response: {
+          content: parsedContent.response.content,
+          options: parsedContent.response.options || [],
+          responseId: response.id,
+        },
+      };
     } catch (error) {
-      console.error('Error extracting context from message:', error);
+      console.error("Error extracting context from message:", error);
+      return null;
+    }
+  }
+
+  async generateContextForReport(
+    reportId: string,
+    transactions: Transaction[]
+  ): Promise<string | null> {
+    try {
+      const report = await prisma.report.findUnique({
+        where: { id: reportId },
+        include: { user: true },
+      });
+
+      if (!report) {
+        return null;
+      }
+
+      const systemPrompt = `You are a financial AI assistant analyzing a user's spending report to provide insights and context.
+
+        Your goal is to:
+        1. Analyze the spending patterns and transactions
+        2. Identify key insights, trends, and notable patterns
+        3. Provide actionable financial advice
+        4. Highlight any concerning or positive spending behaviors
+        5. Make the analysis personal and relevant to the user
+
+        Guidelines:
+        - Be encouraging and supportive
+        - Focus on actionable insights
+        - Highlight both positive and areas for improvement
+        - Use specific numbers and percentages when relevant
+        - Keep the tone friendly and conversational
+        - Provide practical suggestions for better financial management`;
+
+      const transactionsByCategory = transactions.reduce((acc, t) => {
+        if (!acc[t.category]) acc[t.category] = [];
+        acc[t.category].push(t);
+        return acc;
+      }, {} as Record<string, Transaction[]>);
+
+      const categoryAnalysis = Object.entries(transactionsByCategory)
+        .map(([category, txns]) => {
+          const total = txns.reduce((sum, t) => sum + Math.abs(t.amount), 0);
+          const avgAmount = total / txns.length;
+          return `${category}: ${txns.length} transactions, $${total.toFixed(
+            2
+          )} total (avg: $${avgAmount.toFixed(2)})`;
+        })
+        .join("\n");
+
+      const userPrompt = `User's spending report analysis:
+        
+        Report Period: ${report.from.toDateString()} to ${report.to.toDateString()}
+        Total Transactions: ${report.totalTransactions}
+        Total Amount: $${report.totalAmount}
+        Credit Amount: $${report.creditAmount}
+        Debit Amount: $${report.debitAmount}
+        Current Balance: $${report.user.balance}
+        
+        Category Breakdown:
+        ${categoryAnalysis}
+        
+        Transaction Details:
+        ${transactions
+          .map(
+            (t) =>
+              `- $${t.amount} ${t.type} for ${t.category} at ${
+                t.storeName || "Unknown"
+              } on ${t.date.toDateString()}${
+                t.context ? ` (Context: ${t.context})` : ""
+              }`
+          )
+          .join("\n")}
+        
+        Provide a comprehensive analysis with insights, patterns, and actionable advice for this user's spending behavior. Focus on helping them understand their financial habits and provide practical suggestions for improvement.`;
+
+      const response = await this.openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+        temperature: 0.2,
+        max_tokens: 1000,
+      });
+
+      return response.choices[0]?.message?.content || null;
+    } catch (error) {
+      console.error("Error generating report context:", error);
+      return null;
+    }
+  }
+
+  async generateContextForLifeReport(
+    reportId: string,
+    previousShortReports: Report[],
+    currentLifeReport: Report
+  ): Promise<string | null> {
+    try {
+      const systemPrompt = `You are a financial AI assistant analyzing a user's comprehensive life report based on their spending history and patterns.
+
+        Your goal is to:
+        1. Analyze long-term spending trends and patterns from multiple short reports
+        2. Identify significant changes in financial behavior over time
+        3. Provide strategic financial insights and long-term recommendations
+        4. Highlight progress, achievements, and areas needing attention
+        5. Offer actionable advice for long-term financial health
+
+        Guidelines:
+        - Focus on trends and patterns rather than individual transactions
+        - Provide strategic, long-term financial advice
+        - Be encouraging about positive trends and constructive about areas for improvement
+        - Use data from multiple reporting periods to show progression
+        - Offer practical, actionable recommendations for financial growth
+        - Keep the tone supportive and forward-looking`;
+
+      const shortReportsAnalysis = previousShortReports
+        .map((report, index) => {
+          const breakdown = report.categoryBreakdown as Record<string, number>;
+          const topCategories = Object.entries(breakdown)
+            .sort(([, a], [, b]) => b - a)
+            .slice(0, 3)
+            .map(([category, amount]) => `${category}: $${amount.toFixed(2)}`)
+            .join(", ");
+
+          return `Report ${
+            index + 1
+          } (${report.from.toDateString()} - ${report.to.toDateString()}):
+          - Total: $${report.totalAmount.toFixed(2)} (${
+            report.totalTransactions
+          } transactions)
+          - Credit: $${report.creditAmount.toFixed(
+            2
+          )}, Debit: $${report.debitAmount.toFixed(2)}
+          - Top categories: ${topCategories}
+          - AI Context: ${
+            report.context
+              ? report.context.substring(0, 200) + "..."
+              : "No context available"
+          }`;
+        })
+        .join("\n\n");
+
+      const lifeReportBreakdown = currentLifeReport.categoryBreakdown as Record<
+        string,
+        number
+      >;
+      const lifeCategoryAnalysis = Object.entries(lifeReportBreakdown)
+        .sort(([, a], [, b]) => b - a)
+        .map(([category, amount]) => `${category}: $${amount.toFixed(2)}`)
+        .join("\n");
+
+      const userPrompt = `User's Life Report Analysis:
+        
+        Current Life Report Summary:
+        - Period: ${currentLifeReport.from.toDateString()} to ${currentLifeReport.to.toDateString()}
+        - Total Transactions: ${currentLifeReport.totalTransactions}
+        - Total Amount: $${currentLifeReport.totalAmount.toFixed(2)}
+        - Credit Amount: $${currentLifeReport.creditAmount.toFixed(2)}
+        - Debit Amount: $${currentLifeReport.debitAmount.toFixed(2)}
+        
+        Category Breakdown (Life Report):
+        ${lifeCategoryAnalysis}
+        
+        Previous Short Reports Analysis:
+        ${shortReportsAnalysis}
+        
+        Provide a comprehensive life report analysis focusing on:
+        1. Long-term spending trends and patterns
+        2. Financial behavior changes over time
+        3. Category spending evolution
+        4. Strategic recommendations for financial improvement
+        5. Recognition of positive financial habits
+        6. Areas that need attention or adjustment
+        
+        Make this analysis strategic and forward-looking, helping the user understand their overall financial journey and providing actionable insights for long-term financial success.`;
+
+      const response = await this.openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+        temperature: 0.1,
+      });
+
+      return response.choices[0]?.message?.content || null;
+    } catch (error) {
+      console.error("Error generating life report context:", error);
+      return null;
+    }
+  }
+
+  async generateNaturalMessageResponse(
+    userId: string,
+    userMessage: string,
+    lifeReport: Report | null,
+    recentShortReports: Report[]
+  ): Promise<string | null> {
+    try {
+      const systemPrompt = `You are a friendly AI financial assistant helping users with their banking and financial questions.
+
+        Your role is to:
+        1. Answer financial questions based on the user's spending history and reports
+        2. Provide personalized financial advice and insights
+        3. Help with budgeting, spending analysis, and financial planning
+        4. Be conversational, helpful, and supportive
+        5. Use the user's actual financial data to provide relevant context
+
+        Guidelines:
+        - Be friendly and conversational
+        - Provide specific insights based on their actual spending data
+        - Offer actionable advice when appropriate
+        - If you don't have enough context, ask clarifying questions
+        - Keep responses concise but informative
+        - Focus on being helpful and supportive`;
+
+      let contextInfo = "";
+      
+      if (lifeReport) {
+        const lifeBreakdown = lifeReport.categoryBreakdown as Record<string, number>;
+        const topCategories = Object.entries(lifeBreakdown)
+          .sort(([, a], [, b]) => b - a)
+          .slice(0, 3)
+          .map(([category, amount]) => `${category}: $${amount.toFixed(2)}`)
+          .join(", ");
+
+        contextInfo += `Life Report Summary:
+        - Period: ${lifeReport.from.toDateString()} to ${lifeReport.to.toDateString()}
+        - Total Transactions: ${lifeReport.totalTransactions}
+        - Total Amount: $${lifeReport.totalAmount.toFixed(2)}
+        - Credit: $${lifeReport.creditAmount.toFixed(2)}, Debit: $${lifeReport.debitAmount.toFixed(2)}
+        - Top spending categories: ${topCategories}
+        - AI Analysis: ${lifeReport.context ? lifeReport.context.substring(0, 300) + "..." : "No analysis available"}
+
+`;
+      }
+
+      if (recentShortReports.length > 0) {
+        contextInfo += "Recent Short Reports:\n";
+        recentShortReports.forEach((report, index) => {
+          const breakdown = report.categoryBreakdown as Record<string, number>;
+          const topCategory = Object.entries(breakdown)
+            .sort(([, a], [, b]) => b - a)[0];
+          
+          contextInfo += `        Report ${index + 1} (${report.from.toDateString()} - ${report.to.toDateString()}):
+        - Total: $${report.totalAmount.toFixed(2)} (${report.totalTransactions} transactions)
+        - Top category: ${topCategory ? `${topCategory[0]}: $${topCategory[1].toFixed(2)}` : "N/A"}
+        - AI Context: ${report.context ? report.context.substring(0, 200) + "..." : "No context"}
+
+`;
+        });
+      }
+
+      if (!contextInfo) {
+        contextInfo = "No financial data available yet. User hasn't created any reports.";
+      }
+
+      const userPrompt = `User's Financial Context:
+        ${contextInfo}
+        
+        User's Message: "${userMessage}"
+        
+        Please provide a helpful response based on their financial context and message. If they're asking about their spending, use the actual data from their reports. If they need financial advice, make it personalized based on their spending patterns.`;
+
+      const response = await this.openai.responses.create({
+        model: "gpt-4o-mini",
+        input: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+        temperature: 0.5,
+        max_output_tokens: 800,
+      });
+
+      return response.output_text || null;
+    } catch (error) {
+      console.error("Error generating natural message response:", error);
       return null;
     }
   }

@@ -3,8 +3,8 @@ import reportsService from './service';
 
 const router = Router();
 
-// POST /short-reports
-router.post('/', async (req: Request, res: Response) => {
+// POST /reports/short
+router.post('/short', async (req: Request, res: Response) => {
   try {
     const userId = res.locals.userId;
 

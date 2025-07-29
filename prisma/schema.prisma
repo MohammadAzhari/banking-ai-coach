@@ -14,8 +14,7 @@ model User {
   whatsAppId String @map("whatsapp_id")
   
   transactions  Transaction[]
-  shortReports  ShortReport[]
-  lifeReport    LifeReport?
+  reports  Report[]
   
   @@map("users")
 }
@@ -43,28 +42,29 @@ enum TransactionType {
   DEBIT
 }
 
-model ShortReport {
-  id        String   @id @default(uuid())
-  userId    String   @map("user_id")
-  summary   Json
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-  
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  @@map("short_reports")
+enum ReportType {
+  SHORT
+  LIFE
 }
 
-model LifeReport {
+model Report {
   id        String   @id @default(uuid())
-  userId    String   @unique @map("user_id")
-  summary   Json
+  userId    String   @map("user_id")
+  totalTransactions   Int
+  totalAmount   Float
+  creditAmount   Float
+  debitAmount   Float
+  categoryBreakdown   Json
+  from   DateTime
+  to   DateTime
+  type      ReportType
+  context   String?
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
   
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   
-  @@map("life_reports")
+  @@map("reports")
 }
 
 
