@@ -2,12 +2,15 @@ import transactionService from '../transaction/service';
 import aiService from '../ai/service';
 import reportsService from '../reports/service';
 import { prisma } from '../../configs/db'
+import { whatsappService } from '../whatsapp/service';
 
 class MessageService {
 
-  async sendMessage(data: any): Promise<void> {
+  async sendMessage(userId : string, data : {content :string,options? : string[] }): Promise<void> {
     // send message to user whatsapp
     console.log('Sending message to user whatsapp', data);
+    // convert user Id to Whats number 
+    //whatsappService.sendMessage(data);
   }
 
   async onReceiveMessage(userId: string, messageText: string): Promise<void> {
@@ -21,11 +24,11 @@ class MessageService {
         throw new Error('No response generated');
       }
       
-      await this.sendMessage(response);
+      await this.sendMessage(userId,response);
       
     } catch (error) {
       console.error('Error processing received message:', error);
-      await this.sendMessage({
+      await this.sendMessage(userId,{
         content: "I encountered an error processing your message. Please try again.",
       });
     }

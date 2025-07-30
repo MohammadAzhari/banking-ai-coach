@@ -98,10 +98,8 @@ class ReportsService {
           data: { context }
         });
 
-      messageService.sendMessage({
-        content: context,
-        userId: report.userId,
-      });
+      messageService.sendMessage(
+        report.userId,{content: context,});
     } catch (error) {
       console.error('Error generating report context:', error);
     }

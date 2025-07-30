@@ -116,13 +116,14 @@ class TransactionService {
       );
 
       if (aiResponse) {
-        await prisma.transaction.update({
+        
+        const transaction = await prisma.transaction.update({
           where: { id: transactionId },
           data: { latestResponseId: aiResponse.responseId },
         });
         // TODO: need to get user whatsapp/phone id from db
         // Send the content message (options can be used for interactive responses)
-        await messageService.sendMessage(aiResponse);
+        await messageService.sendMessage(transaction.userId, aiResponse);
       } else {
         console.log(
           `No AI response generated for transaction ${transactionId}`
