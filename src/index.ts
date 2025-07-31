@@ -8,7 +8,7 @@ import helmet from "helmet";
 import transactionRoutes from "./modules/transaction/routes";
 import messageRoutes from "./modules/messages/routes";
 import reportsRoutes from "./modules/reports/routes";
-import whatsappRoutes from "./modules/whatsapp/routes";  
+import whatsappRoutes from "./modules/whatsapp/routes";
 import userMiddleware from "./middleware/userMiddleware";
 
 const app = express();
@@ -21,9 +21,9 @@ app.use(express.json());
 
 // Routes
 app.use("/transactions", userMiddleware, transactionRoutes);
-app.use("/messages", messageRoutes);
+app.use("/messages", userMiddleware, messageRoutes);
 app.use("/reports", userMiddleware, reportsRoutes);
-app.use("/whatsapp", whatsappRoutes); 
+app.use("/whatsapp", whatsappRoutes);
 
 // Health check endpoint
 app.get("/health", (req, res) => {
@@ -31,7 +31,7 @@ app.get("/health", (req, res) => {
     status: "OK",
     timestamp: new Date().toISOString(),
     service: "Banking AI Coach",
-    whatsapp: "Connected"  // Optional: add WhatsApp status
+    whatsapp: "Connected", // Optional: add WhatsApp status
   });
 });
 

@@ -1,4 +1,5 @@
--
-
 - handle the case of follow up messages with no transactions
 - store messages in DB
+- deploy
+- limit the option to be 20 letters
+- make the ai talk in arabic

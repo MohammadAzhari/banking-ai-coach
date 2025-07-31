@@ -1,6 +1,6 @@
-import axios from 'axios';
-import { whatsappConfig } from './config';
-import { WhatsAppMessage } from './types';
+import axios from "axios";
+import { whatsappConfig } from "./config";
+import { WhatsAppMessage } from "./types";
 
 export class WhatsAppService {
   private apiUrl: string;
@@ -11,128 +11,119 @@ export class WhatsAppService {
 
   // Send a text message
   async sendMessage(to: string, message: string): Promise<any> {
-    try {
-      const response = await axios.post(
-        `${this.apiUrl}/messages`,
-        {
-          messaging_product: 'whatsapp',
-          to: to,
-          type: 'text',
-          text: { body: message }
+    const response = await axios.post(
+      `${this.apiUrl}/messages`,
+      {
+        messaging_product: "whatsapp",
+        to: to,
+        type: "text",
+        text: { body: message },
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${whatsappConfig.accessToken}`,
+          "Content-Type": "application/json",
         },
-        {
-          headers: {
-            'Authorization': `Bearer ${whatsappConfig.accessToken}`,
-            'Content-Type': 'application/json'
-          }
-        }
-      );
-      return response.data;
-    } catch (error) {
-      console.error('Error sending WhatsApp message:', error);
-      throw error;
-    }
+      }
+    );
+    return response.data;
   }
 
   // Send interactive button message
-  async sendButtonMessage(to: string, bodyText: string, buttons: Array<{id: string, title: string}>): Promise<any> {
-    try {
-      const response = await axios.post(
-        `${this.apiUrl}/messages`,
-        {
-          messaging_product: 'whatsapp',
-          recipient_type: 'individual',
-          to: to,
-          type: 'interactive',
-          interactive: {
-            type: 'button',
-            body: {
-              text: bodyText
-            },
-            action: {
-              buttons: buttons.map(button => ({
-                type: 'reply',
-                reply: {
-                  id: button.id,
-                  title: button.title
-                }
-              }))
-            }
-          }
+  async sendButtonMessage(
+    to: string,
+    bodyText: string,
+    buttons: Array<{ id: string; title: string }>
+  ): Promise<any> {
+    const response = await axios.post(
+      `${this.apiUrl}/messages`,
+      {
+        messaging_product: "whatsapp",
+        recipient_type: "individual",
+        to: to,
+        type: "interactive",
+        interactive: {
+          type: "button",
+          body: {
+            text: bodyText,
+          },
+          action: {
+            buttons: buttons.map((button) => ({
+              type: "reply",
+              reply: {
+                id: button.id,
+                title: button.title,
+              },
+            })),
+          },
         },
-        {
-          headers: {
-            'Authorization': `Bearer ${whatsappConfig.accessToken}`,
-            'Content-Type': 'application/json'
-          }
-        }
-      );
-      return response.data;
-    } catch (error) {
-      console.error('Error sending WhatsApp button message:', error);
-      throw error;
-    }
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${whatsappConfig.accessToken}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    return response.data;
   }
 
   // Process incoming webhook messages
   processWebhookMessage(body: any): WhatsAppMessage | null {
-    try {
-      const entry = body.entry?.[0];
-      const changes = entry?.changes?.[0];
-      const value = changes?.value;
-      const message = value?.messages?.[0];
+    const entry = body.entry?.[0];
+    const changes = entry?.changes?.[0];
+    const value = changes?.value;
+    const message = value?.messages?.[0];
 
-      if (message) {
-        // Handle both text messages and button responses
-        let messageBody = '';
-        
-        if (message.type === 'text') {
-          messageBody = message.text?.body || '';
-        } else if (message.type === 'interactive' && message.interactive?.type === 'button_reply') {
-          messageBody = message.interactive.button_reply.id || '';
-        }
+    if (message) {
+      // Handle both text messages and button responses
+      let messageBody = "";
 
-        return {
-          from: message.from,
-          to: whatsappConfig.phoneNumberId,
-          body: messageBody,
-          timestamp: message.timestamp,
-          messageId: message.id
-        };
+      if (message.type === "text") {
+        messageBody = message.text?.body || "";
+      } else if (
+        message.type === "interactive" &&
+        message.interactive?.type === "button_reply"
+      ) {
+        messageBody = message.interactive.button_reply.id || "";
       }
-      return null;
-    } catch (error) {
-      console.error('Error processing webhook message:', error);
-      return null;
+
+      return {
+        from: message.from,
+        to: whatsappConfig.phoneNumberId,
+        body: messageBody,
+        timestamp: message.timestamp,
+        messageId: message.id,
+      };
     }
+    return null;
   }
 
   // Send a template message
-  async sendTemplate(to: string, templateName: string, languageCode: string = 'en'): Promise<any> {
-    try {
-      const response = await axios.post(
-        `${this.apiUrl}/messages`,
-        {
-          messaging_product: 'whatsapp',
-          to: to,
-          type: 'template',
-          template: {
-            name: templateName,
-            language: { code: languageCode }
-          }
+  async sendTemplate(
+    to: string,
+    templateName: string,
+    languageCode: string = "en"
+  ): Promise<any> {
+    const response = await axios.post(
+      `${this.apiUrl}/messages`,
+      {
+        messaging_product: "whatsapp",
+        to: to,
+        type: "template",
+        template: {
+          name: templateName,
+          language: { code: languageCode },
         },
-        {
-          headers: {
-            'Authorization': `Bearer ${whatsappConfig.accessToken}`,
-            'Content-Type': 'application/json'
-          }
-        }
-      );
-      return response.data;
-    } catch (error) {
-      console.error('Error sending WhatsApp template:', error);
-      throw error;
-    }
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${whatsappConfig.accessToken}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    return response.data;
   }
 }
 

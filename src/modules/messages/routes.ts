@@ -1,17 +1,17 @@
-import { Router, Request, Response } from 'express';
-import messageService from './service';
+import { Router, Request, Response } from "express";
+import messageService from "./service";
 
 const router = Router();
 
 // POST /messages
-router.post('/', async (req: Request, res: Response) => {
+router.post("/", async (req: Request, res: Response) => {
   try {
     const { text } = req.body;
 
     // Validate input
-    if (!text || typeof text !== 'string' || text.trim().length === 0) {
-      return res.status(400).json({ 
-        error: 'Text is required and must be a non-empty string' 
+    if (!text || typeof text !== "string" || text.trim().length === 0) {
+      return res.status(400).json({
+        error: "Text is required and must be a non-empty string",
       });
     }
 
@@ -19,13 +19,11 @@ router.post('/', async (req: Request, res: Response) => {
     await messageService.onReceiveMessage(userId, text.trim());
 
     res.status(201).json({
-      message: 'Message received and processed successfully.'
+      message: "Message received and processed successfully.",
     });
-
   } catch (error) {
-    console.error('Error sending message:', error);
-    res.status(500).json({ 
-      error: 'Internal server error' 
+    res.status(500).json({
+      error: "Internal server error",
     });
   }
 });

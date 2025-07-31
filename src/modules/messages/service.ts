@@ -9,82 +9,77 @@ class MessageService {
     userId: string,
     data: { content: string; options?: string[] }
   ): Promise<void> {
-    try {
-      // Fetch user from database to get WhatsApp ID
-      const user = await prisma.user.findUnique({
-        where: { id: userId },
-        select: { whatsAppId: true, name: true },
-      });
+    console.log(`Sending message to user ${userId}:`, data);
+    // Fetch user from database to get WhatsApp ID
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
 
-      if (!user) {
-        throw new Error(`User with ID ${userId} not found`);
-      }
-
-      if (!user.whatsAppId) {
-        throw new Error(`User ${userId} does not have a WhatsApp ID`);
-      }
-
-      await this.storeMessage({
-        userId,
-        message: data.content,
-        isFromAi: true,
-        options: data.options,
-      });
-
-      console.log(
-        `Sending message to user ${userId} (WhatsApp: ${user.whatsAppId})`
-      );
-
-      // Check if we need to send buttons or just text
-      if (data.options && data.options.length > 0) {
-        // Send interactive button message
-        const buttons = data.options.slice(0, 3).map((option, index) => ({
-          id: `option_${index}`,
-          title: option.substring(0, 20), // WhatsApp button limit is 20 chars
-        }));
-
-        await whatsappService.sendButtonMessage(
-          user.whatsAppId,
-          data.content,
-          buttons
-        );
-      } else {
-        // Send regular text message
-        await whatsappService.sendMessage(user.whatsAppId, data.content);
-      }
-
-      console.log("Message sent successfully");
-    } catch (error) {
-      console.error("Error sending WhatsApp message:", error);
-      throw error;
+    if (!user) {
+      throw new Error(`User with ID ${userId} not found`);
     }
+
+    if (!user.whatsAppId) {
+      throw new Error(`User ${userId} does not have a WhatsApp ID`);
+    }
+
+    await this.storeMessage({
+      userId,
+      message: data.content,
+      isFromAi: true,
+      options: data.options,
+    });
+
+    console.log(
+      `Sending message to user ${userId} (WhatsApp: ${user.whatsAppId})`
+    );
+
+    // Check if we need to send buttons or just text
+    if (data.options && data.options.length > 0) {
+      // Send interactive button message
+      const buttons = data.options.slice(0, 3).map((option, index) => ({
+        id: `option_${index}`,
+        title: option.substring(0, 20), // WhatsApp button limit is 20 chars
+      }));
+
+      await whatsappService.sendButtonMessage(
+        user.whatsAppId,
+        data.content,
+        buttons
+      );
+    } else {
+      // Send regular text message
+      await whatsappService.sendMessage(user.whatsAppId, data.content);
+    }
+
+    console.log("Message sent successfully");
   }
 
   async onReceiveMessage(userId: string, messageText: string): Promise<void> {
-    try {
-      console.log(`Receiving message from user ${userId}: "${messageText}"`);
+    console.log(`Receiving message from user ${userId}: "${messageText}"`);
 
-      await this.storeMessage({
-        userId,
-        message: messageText,
-        isFromAi: false,
-      });
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
 
-      // Use simplified transaction service method
-      const response = await this.processUserMessage(userId, messageText);
-
-      if (!response) {
-        throw new Error("No response generated");
-      }
-
-      await this.sendMessage(userId, response);
-    } catch (error) {
-      console.error("Error processing received message:", error);
-      await this.sendMessage(userId, {
-        content:
-          "I encountered an error processing your message. Please try again.",
-      });
+    if (!user) {
+      throw new Error(`User with ID ${userId} not found`);
     }
+
+    await this.storeMessage({
+      userId,
+      message: messageText,
+      isFromAi: false,
+    });
+
+    // Use simplified transaction service method
+    const response = await this.processUserMessage(userId, messageText);
+
+    if (!response) {
+      throw new Error("No response generated");
+    }
+
+    await this.sendMessage(userId, response);
   }
 
   async processUserMessage(
@@ -149,42 +144,32 @@ class MessageService {
         };
       }
     }
+    const [lifeReport, recentShortReports] = await Promise.all([
+      reportsService.getLifeReportByUserId(userId),
+      prisma.report.findMany({
+        where: {
+          userId,
+          type: "SHORT",
+        },
+        orderBy: { createdAt: "desc" },
+        take: 2,
+      }),
+    ]);
 
-    // Handle natural messages using life report and recent short reports as context
-    try {
-      const [lifeReport, recentShortReports] = await Promise.all([
-        reportsService.getLifeReportByUserId(userId),
-        prisma.report.findMany({
-          where: {
-            userId,
-            type: "SHORT",
-          },
-          orderBy: { createdAt: "desc" },
-          take: 2,
-        }),
-      ]);
+    const response = await aiService.generateNaturalMessageResponse(
+      userId,
+      userMessage,
+      lifeReport,
+      recentShortReports
+    );
 
-      const response = await aiService.generateNaturalMessageResponse(
-        userId,
-        userMessage,
-        lifeReport,
-        recentShortReports
-      );
-
-      if (!response) {
-        throw new Error("No response generated");
-      }
-
-      return {
-        content: response,
-      };
-    } catch (error) {
-      console.error("Error handling natural message:", error);
-      return {
-        content:
-          "I encountered an error processing your message. Please try again.",
-      };
+    if (!response) {
+      throw new Error("No response generated");
     }
+
+    return {
+      content: response,
+    };
   }
 
   private async storeMessage(data: {
@@ -193,18 +178,14 @@ class MessageService {
     isFromAi: boolean;
     options?: string[];
   }) {
-    try {
-      await prisma.message.create({
-        data: {
-          userId: data.userId,
-          message: data.message,
-          isFromAi: data.isFromAi,
-          options: data.options ? JSON.stringify(data.options) : undefined,
-        },
-      });
-    } catch (error: any) {
-      console.error("Error storing message:", error);
-    }
+    await prisma.message.create({
+      data: {
+        userId: data.userId,
+        message: data.message,
+        isFromAi: data.isFromAi,
+        options: data.options ? JSON.stringify(data.options) : undefined,
+      },
+    });
   }
 }
 

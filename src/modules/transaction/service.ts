@@ -24,9 +24,9 @@ class TransactionService {
         where: { id: userId },
         data: {
           balance: {
-            increment: data.type === 'CREDIT' ? data.amount : -data.amount,
-          }
-        }
+            increment: data.type === "CREDIT" ? data.amount : -data.amount,
+          },
+        },
       });
 
       return transaction;
@@ -41,16 +41,11 @@ class TransactionService {
     transactionId: string,
     context: string
   ): Promise<boolean> {
-    try {
-      await prisma.transaction.update({
-        where: { id: transactionId },
-        data: { context },
-      });
-      return true;
-    } catch (error) {
-      console.error("Error updating transaction context:", error);
-      return false;
-    }
+    await prisma.transaction.update({
+      where: { id: transactionId },
+      data: { context },
+    });
+    return true;
   }
 
   async getUnreportedTransactionsByUserId(
@@ -78,62 +73,45 @@ class TransactionService {
   }
 
   async closeTransactionConversation(transactionId: string): Promise<boolean> {
-    try {
-      await prisma.transaction.update({
-        where: { id: transactionId },
-        data: { isConversationClosed: true }
-      });
-      return true;
-    } catch (error) {
-      console.error('Error closing transaction conversation:', error);
-      return false;
-    }
+    await prisma.transaction.update({
+      where: { id: transactionId },
+      data: { isConversationClosed: true },
+    });
+    return true;
   }
 
-  async updateTransactionResponseId(transactionId: string, responseId: string): Promise<boolean> {
-    try {
-      await prisma.transaction.update({
-        where: { id: transactionId },
-        data: { latestResponseId: responseId }
-      });
-      return true;
-    } catch (error) {
-      console.error('Error updating transaction response ID:', error);
-      return false;
-    }
+  async updateTransactionResponseId(
+    transactionId: string,
+    responseId: string
+  ): Promise<boolean> {
+    await prisma.transaction.update({
+      where: { id: transactionId },
+      data: { latestResponseId: responseId },
+    });
+    return true;
   }
 
   private async requestContextInBackground(
     transactionId: string
   ): Promise<void> {
-    try {
-      console.log(
-        `Background: Requesting context for transaction ${transactionId}`
-      );
+    console.log(
+      `Background: Requesting context for transaction ${transactionId}`
+    );
 
-      const aiResponse = await aiService.generateContextQuestionForTransaction(
-        transactionId
-      );
+    const aiResponse = await aiService.generateContextQuestionForTransaction(
+      transactionId
+    );
 
-      if (aiResponse) {
-        
-        const transaction = await prisma.transaction.update({
-          where: { id: transactionId },
-          data: { latestResponseId: aiResponse.responseId },
-        });
-        // TODO: need to get user whatsapp/phone id from db
-        // Send the content message (options can be used for interactive responses)
-        await messageService.sendMessage(transaction.userId, aiResponse);
-      } else {
-        console.log(
-          `No AI response generated for transaction ${transactionId}`
-        );
-      }
-    } catch (error) {
-      console.error(
-        `Error in requestContextInBackground for transaction ${transactionId}:`,
-        error
-      );
+    if (aiResponse) {
+      const transaction = await prisma.transaction.update({
+        where: { id: transactionId },
+        data: { latestResponseId: aiResponse.responseId },
+      });
+      // TODO: need to get user whatsapp/phone id from db
+      // Send the content message (options can be used for interactive responses)
+      await messageService.sendMessage(transaction.userId, aiResponse);
+    } else {
+      console.log(`No AI response generated for transaction ${transactionId}`);
     }
   }
 }
