@@ -6,11 +6,50 @@ import { whatsappService } from '../whatsapp/service';
 
 class MessageService {
 
-  async sendMessage(userId : string, data : {content :string,options? : string[] }): Promise<void> {
-    // send message to user whatsapp
-    console.log('Sending message to user whatsapp', data);
-    // convert user Id to Whats number 
-    //whatsappService.sendMessage(data);
+async sendMessage(userId: string, data: { content: string, options?: string[] }): Promise<void> {
+    try {
+      // Fetch user from database to get WhatsApp ID
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { whatsAppId: true, name: true }
+      });
+
+      if (!user) {
+        throw new Error(`User with ID ${userId} not found`);
+      }
+
+      if (!user.whatsAppId) {
+        throw new Error(`User ${userId} does not have a WhatsApp ID`);
+      }
+
+      console.log(`Sending message to user ${userId} (WhatsApp: ${user.whatsAppId})`);
+
+      // Check if we need to send buttons or just text
+      if (data.options && data.options.length > 0) {
+        // Send interactive button message
+        const buttons = data.options.slice(0, 3).map((option, index) => ({
+          id: `option_${index}`,
+          title: option.substring(0, 20) // WhatsApp button limit is 20 chars
+        }));
+
+        await whatsappService.sendButtonMessage(
+          user.whatsAppId,
+          data.content,
+          buttons
+        );
+      } else {
+        // Send regular text message
+        await whatsappService.sendMessage(
+          user.whatsAppId,
+          data.content
+        );
+      }
+
+      console.log('Message sent successfully');
+    } catch (error) {
+      console.error('Error sending WhatsApp message:', error);
+      throw error;
+    }
   }
 
   async onReceiveMessage(userId: string, messageText: string): Promise<void> {
