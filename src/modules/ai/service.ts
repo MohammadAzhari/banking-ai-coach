@@ -75,6 +75,7 @@ class AIService {
         - Generate options that help uncover the story behind the purchase
         - Focus on understanding the context: was it planned/unplanned, social/personal, special occasion, etc.
         - Be creative with options that relate to the specific transaction type and amount
+        - Use Arabic language, Saudi dialect
 
         Example:
         If user spent $45 at "Pizza Palace" (20% more than usual $38 average):
@@ -335,6 +336,45 @@ class AIService {
     }
   }
 
+  async summarizeContextForUser(context: string): Promise<string | null> {
+    try {
+      const summaryPrompt = `Summarize the following financial analysis in a friendly and understandable way.
+  
+        The summary should:
+        - Be written in Arabic using a Saudi dialect
+        - Highlight the key points and financial insights
+        - Focus on practical tips and clear patterns
+        - Avoid going into complex details
+        - Be short, personal, and easy to read
+        
+        Full analysis:
+        ${context}
+        
+        Now write the summary in Arabic (Saudi dialect).`;
+
+      const response = await this.openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "system",
+            content: `You are a helpful financial assistant. Your task is to provide users with a concise and practical summary of their financial report in Arabic with a friendly, conversational Saudi tone.`,
+          },
+          {
+            role: "user",
+            content: summaryPrompt,
+          },
+        ],
+        temperature: 0.3,
+        max_tokens: 500,
+      });
+
+      return response.choices[0]?.message?.content || null;
+    } catch (error) {
+      console.error("Error summarizing context:", error);
+      return null;
+    }
+  }
+
   async generateContextForLifeReport(
     reportId: string,
     previousShortReports: Report[],
@@ -439,8 +479,9 @@ class AIService {
     userId: string,
     userMessage: string,
     lifeReport: Report | null,
-    recentShortReports: Report[]
-  ): Promise<string | null> {
+    recentShortReports: Report[],
+    latestResponseId: string | undefined = undefined
+  ): Promise<{ message: string; responseId: string } | null> {
     try {
       const systemPrompt = `You are a friendly AI financial assistant helping users with their banking and financial questions.
 
@@ -457,7 +498,9 @@ class AIService {
         - Offer actionable advice when appropriate
         - If you don't have enough context, ask clarifying questions
         - Keep responses concise but informative
-        - Focus on being helpful and supportive`;
+        - Focus on being helpful and supportive
+        - Make the message in Arabic using a Saudi dialect
+        - Make the message short and easy to read`;
 
       let contextInfo = "";
 
@@ -537,10 +580,19 @@ class AIService {
           { role: "user", content: userPrompt },
         ],
         temperature: 0.5,
-        max_output_tokens: 800,
+        max_output_tokens: 200,
+        previous_response_id: latestResponseId,
+        store: true,
       });
 
-      return response.output_text || null;
+      if (!response) {
+        return null;
+      }
+
+      return {
+        message: response.output_text,
+        responseId: response.id,
+      };
     } catch (error) {
       console.error("Error generating natural message response:", error);
       return null;

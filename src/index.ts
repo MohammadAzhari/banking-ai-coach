@@ -11,10 +11,6 @@ import reportsRoutes from "./modules/reports/routes";
 import whatsappRoutes from "./modules/whatsapp/routes";
 import userMiddleware from "./middleware/userMiddleware";
 
-console.log({
-  env: process.env,
-});
-
 const app = express();
 const PORT = process.env.PORT || 3000;
 

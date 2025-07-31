@@ -3,6 +3,7 @@ import aiService from "../ai/service";
 import reportsService from "../reports/service";
 import { prisma } from "../../configs/db";
 import { whatsappService } from "../whatsapp/service";
+import { Message } from "@prisma/client";
 
 class MessageService {
   async sendMessage(
@@ -66,14 +67,14 @@ class MessageService {
       throw new Error(`User with ID ${userId} not found`);
     }
 
-    await this.storeMessage({
+    const messsage = await this.storeMessage({
       userId,
       message: messageText,
       isFromAi: false,
     });
 
     // Use simplified transaction service method
-    const response = await this.processUserMessage(userId, messageText);
+    const response = await this.processUserMessage(messsage);
 
     if (!response) {
       throw new Error("No response generated");
@@ -83,12 +84,11 @@ class MessageService {
   }
 
   async processUserMessage(
-    userId: string,
-    userMessage: string
+    message: Message
   ): Promise<{ content: string; options?: string[] } | null> {
     const latestTransaction = await prisma.transaction.findFirst({
       where: {
-        userId,
+        userId: message.userId,
       },
       orderBy: { date: "desc" },
     });
@@ -97,7 +97,7 @@ class MessageService {
       // Transaction is open - check user message and extract context
       const result = await aiService.extractContextFromMessage(
         latestTransaction.id,
-        userMessage
+        message.message
       );
 
       if (!result) {
@@ -145,10 +145,10 @@ class MessageService {
       }
     }
     const [lifeReport, recentShortReports] = await Promise.all([
-      reportsService.getLifeReportByUserId(userId),
+      reportsService.getLifeReportByUserId(message.userId),
       prisma.report.findMany({
         where: {
-          userId,
+          userId: message.userId,
           type: "SHORT",
         },
         orderBy: { createdAt: "desc" },
@@ -156,19 +156,40 @@ class MessageService {
       }),
     ]);
 
+    const latestUserMessage = await prisma.message.findFirst({
+      where: {
+        userId: message.userId,
+        isFromAi: false,
+        id: {
+          not: message.id,
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
     const response = await aiService.generateNaturalMessageResponse(
-      userId,
-      userMessage,
+      message.userId,
+      message.message,
       lifeReport,
-      recentShortReports
+      recentShortReports,
+      latestUserMessage?.aiResponseId ?? undefined
     );
 
     if (!response) {
       throw new Error("No response generated");
     }
 
+    await prisma.message.update({
+      where: {
+        id: message.id,
+      },
+      data: {
+        aiResponseId: response.responseId,
+      },
+    });
+
     return {
-      content: response,
+      content: response.message,
     };
   }
 
@@ -178,7 +199,7 @@ class MessageService {
     isFromAi: boolean;
     options?: string[];
   }) {
-    await prisma.message.create({
+    return prisma.message.create({
       data: {
         userId: data.userId,
         message: data.message,
