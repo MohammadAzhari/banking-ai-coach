@@ -78,26 +78,26 @@ class AIService {
         - Use Arabic language, Saudi dialect
 
         Example:
-        If user spent $45 at "Pizza Palace" (20% more than usual $38 average):
-        Content: "I noticed you visited Pizza Palace again! This time you spent $45, which is about 20% more than your usual $38 there. I'm curious about what made this visit special?"
+        If user spent SAR45 at "Pizza Palace" (20% more than usual SAR38 average):
+        Content: "I noticed you visited Pizza Palace again! This time you spent SAR45, which is about 20% more than your usual SAR38 there. I'm curious about what made this visit special?"
         Options: ["I was with friends this time", "Tried their new premium menu", "Ordered extra for family", "It was a celebration"]
 
-        Another example for $120 at "Target" (first time this month):
-        Content: "Great to see you shopping at Target! $120 is quite a haul. I'd love to know what brought you there today?"
+        Another example for SAR120 at "Target" (first time this month):
+        Content: "Great to see you shopping at Target! SAR120 is quite a haul. I'd love to know what brought you there today?"
         Options: ["Monthly household essentials", "Back-to-school shopping", "Home improvement project", "Unexpected need came up"] IMPORTANT NOTE: """""Make it max 20 chars""""`;
 
       const userPrompt = `User just made a transaction:
-        - Amount: $${transaction.amount}
+        - Amount: SAR${transaction.amount}
         - Category: ${transaction.category}
         - Store: ${transaction.storeName || "Not specified"}
-        - Current Balance: $${transaction.user.balance}
+        - Current Balance: SAR${transaction.user.balance}
 
         Recent transactions in same category (${transaction.category}):
         ${
           categoryTransactions
             .map(
               (t) =>
-                `- $${t.amount} at ${
+                `- SAR${t.amount} at ${
                   t.storeName || "Unknown"
                 } on ${t.date.toDateString()}`
             )
@@ -111,7 +111,7 @@ class AIService {
           storeTransactions
             .map(
               (t) =>
-                `- $${t.amount} for ${t.category} on ${t.date.toDateString()}`
+                `- SAR${t.amount} for ${t.category} on ${t.date.toDateString()}`
             )
             .join("\n") || "None found"
         }`
@@ -123,7 +123,7 @@ class AIService {
           recentTransactions
             .map(
               (t) =>
-                `- $${t.amount} for ${t.category} at ${
+                `- SAR${t.amount} for ${t.category} at ${
                   t.storeName || "Unknown"
                 } on ${t.date.toDateString()}`
             )
@@ -205,7 +205,7 @@ class AIService {
         }`;
 
       const userPrompt = `Transaction details:
-        - Amount: $${transaction.amount}
+        - Amount: SAR${transaction.amount}
         - Category: ${transaction.category}
         - Store: ${transaction.storeName || "Not specified"}
         - Date: ${transaction.date.toDateString()}
@@ -287,9 +287,9 @@ class AIService {
         .map(([category, txns]) => {
           const total = txns.reduce((sum, t) => sum + Math.abs(t.amount), 0);
           const avgAmount = total / txns.length;
-          return `${category}: ${txns.length} transactions, $${total.toFixed(
+          return `${category}: ${txns.length} transactions, SAR${total.toFixed(
             2
-          )} total (avg: $${avgAmount.toFixed(2)})`;
+          )} total (avg: SAR${avgAmount.toFixed(2)})`;
         })
         .join("\n");
 
@@ -297,10 +297,10 @@ class AIService {
         
         Report Period: ${report.from.toDateString()} to ${report.to.toDateString()}
         Total Transactions: ${report.totalTransactions}
-        Total Amount: $${report.totalAmount}
-        Credit Amount: $${report.creditAmount}
-        Debit Amount: $${report.debitAmount}
-        Current Balance: $${report.user.balance}
+        Total Amount: SAR${report.totalAmount}
+        Credit Amount: SAR${report.creditAmount}
+        Debit Amount: SAR${report.debitAmount}
+        Current Balance: SAR${report.user.balance}
         
         Category Breakdown:
         ${categoryAnalysis}
@@ -309,7 +309,7 @@ class AIService {
         ${transactions
           .map(
             (t) =>
-              `- $${t.amount} ${t.type} for ${t.category} at ${
+              `- SAR${t.amount} ${t.type} for ${t.category} at ${
                 t.storeName || "Unknown"
               } on ${t.date.toDateString()}${
                 t.context ? ` (Context: ${t.context})` : ""
@@ -404,18 +404,18 @@ class AIService {
           const topCategories = Object.entries(breakdown)
             .sort(([, a], [, b]) => b - a)
             .slice(0, 3)
-            .map(([category, amount]) => `${category}: $${amount.toFixed(2)}`)
+            .map(([category, amount]) => `${category}: SAR${amount.toFixed(2)}`)
             .join(", ");
 
           return `Report ${
             index + 1
           } (${report.from.toDateString()} - ${report.to.toDateString()}):
-          - Total: $${report.totalAmount.toFixed(2)} (${
+          - Total: SAR${report.totalAmount.toFixed(2)} (${
             report.totalTransactions
           } transactions)
-          - Credit: $${report.creditAmount.toFixed(
+          - Credit: SAR${report.creditAmount.toFixed(
             2
-          )}, Debit: $${report.debitAmount.toFixed(2)}
+          )}, Debit: SAR${report.debitAmount.toFixed(2)}
           - Top categories: ${topCategories}
           - AI Context: ${
             report.context
@@ -431,7 +431,7 @@ class AIService {
       >;
       const lifeCategoryAnalysis = Object.entries(lifeReportBreakdown)
         .sort(([, a], [, b]) => b - a)
-        .map(([category, amount]) => `${category}: $${amount.toFixed(2)}`)
+        .map(([category, amount]) => `${category}: SAR${amount.toFixed(2)}`)
         .join("\n");
 
       const userPrompt = `User's Life Report Analysis:
@@ -439,9 +439,9 @@ class AIService {
         Current Life Report Summary:
         - Period: ${currentLifeReport.from.toDateString()} to ${currentLifeReport.to.toDateString()}
         - Total Transactions: ${currentLifeReport.totalTransactions}
-        - Total Amount: $${currentLifeReport.totalAmount.toFixed(2)}
-        - Credit Amount: $${currentLifeReport.creditAmount.toFixed(2)}
-        - Debit Amount: $${currentLifeReport.debitAmount.toFixed(2)}
+        - Total Amount: SAR${currentLifeReport.totalAmount.toFixed(2)}
+        - Credit Amount: SAR${currentLifeReport.creditAmount.toFixed(2)}
+        - Debit Amount: SAR${currentLifeReport.debitAmount.toFixed(2)}
         
         Category Breakdown (Life Report):
         ${lifeCategoryAnalysis}
@@ -512,16 +512,16 @@ class AIService {
         const topCategories = Object.entries(lifeBreakdown)
           .sort(([, a], [, b]) => b - a)
           .slice(0, 3)
-          .map(([category, amount]) => `${category}: $${amount.toFixed(2)}`)
+          .map(([category, amount]) => `${category}: SAR${amount.toFixed(2)}`)
           .join(", ");
 
         contextInfo += `Life Report Summary:
         - Period: ${lifeReport.from.toDateString()} to ${lifeReport.to.toDateString()}
         - Total Transactions: ${lifeReport.totalTransactions}
-        - Total Amount: $${lifeReport.totalAmount.toFixed(2)}
-        - Credit: $${lifeReport.creditAmount.toFixed(
+        - Total Amount: SAR${lifeReport.totalAmount.toFixed(2)}
+        - Credit: SAR${lifeReport.creditAmount.toFixed(
           2
-        )}, Debit: $${lifeReport.debitAmount.toFixed(2)}
+        )}, Debit: SAR${lifeReport.debitAmount.toFixed(2)}
         - Top spending categories: ${topCategories}
         - AI Analysis: ${
           lifeReport.context
@@ -543,12 +543,12 @@ class AIService {
           contextInfo += `        Report ${
             index + 1
           } (${report.from.toDateString()} - ${report.to.toDateString()}):
-        - Total: $${report.totalAmount.toFixed(2)} (${
+        - Total: SAR${report.totalAmount.toFixed(2)} (${
             report.totalTransactions
           } transactions)
         - Top category: ${
           topCategory
-            ? `${topCategory[0]}: $${topCategory[1].toFixed(2)}`
+            ? `${topCategory[0]}: SAR${topCategory[1].toFixed(2)}`
             : "N/A"
         }
         - AI Context: ${
