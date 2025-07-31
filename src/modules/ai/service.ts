@@ -189,6 +189,7 @@ class AIService {
         4. Provide an appropriate response
 
         Guidelines:
+        - Do NOT use markdown formatting or markdown response syntax (such as triple backticks, code blocks, or markdown tables) in your answer. Only use plain text.
         - Extract specific context like purpose, category details, business/personal nature
         - Ask for more info if the context is vague or incomplete
         - Be conversational and helpful
@@ -270,6 +271,7 @@ class AIService {
         5. Make the analysis personal and relevant to the user
 
         Guidelines:
+        - Do NOT use markdown formatting or markdown response syntax (such as triple backticks, code blocks, or markdown tables) in your answer. Only use plain text.
         - Be encouraging and supportive
         - Focus on actionable insights
         - Highlight both positive and areas for improvement
@@ -357,7 +359,7 @@ class AIService {
         messages: [
           {
             role: "system",
-            content: `You are a helpful financial assistant. Your task is to provide users with a concise and practical summary of their financial report in Arabic with a friendly, conversational Saudi tone.`,
+            content: `You are a helpful financial assistant. Your task is to provide users with a concise and practical summary of their financial report in Arabic with a friendly, conversational Saudi tone. Do NOT use markdown formatting or markdown response syntax (such as triple backticks, code blocks, or markdown tables) in your answer. Only use plain text.`,
           },
           {
             role: "user",
@@ -391,6 +393,7 @@ class AIService {
         5. Offer actionable advice for long-term financial health
 
         Guidelines:
+        - Do NOT use markdown formatting or markdown response syntax (such as triple backticks, code blocks, or markdown tables) in your answer. Only use plain text.
         - Focus on trends and patterns rather than individual transactions
         - Provide strategic, long-term financial advice
         - Be encouraging about positive trends and constructive about areas for improvement
@@ -483,6 +486,16 @@ class AIService {
     latestResponseId: string | undefined = undefined
   ): Promise<{ message: string; responseId: string } | null> {
     try {
+      const user = await prisma.user.findUnique({
+        where: {
+          id: userId,
+        },
+      });
+
+      if (!user) {
+        throw new Error("User not found");
+      }
+
       const systemPrompt = `You are a friendly AI financial assistant helping users with their banking and financial questions.
 
         Your role is to:
@@ -493,6 +506,7 @@ class AIService {
         5. Use the user's actual financial data to provide relevant context
 
         Guidelines:
+        - Do NOT use markdown formatting or markdown response syntax (such as triple backticks, code blocks, or markdown tables) in your answer. Only use plain text.
         - Be friendly and conversational
         - Provide specific insights based on their actual spending data
         - Offer actionable advice when appropriate
@@ -502,7 +516,11 @@ class AIService {
         - Make the message in Arabic using a Saudi dialect
         - Make the message short and easy to read`;
 
-      let contextInfo = "";
+      let contextInfo = `
+          User Info:
+            User name: ${user.name}
+            User balance: ${user.balance}
+      `;
 
       if (lifeReport) {
         const lifeBreakdown = lifeReport.categoryBreakdown as Record<

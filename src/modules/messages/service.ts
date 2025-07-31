@@ -138,9 +138,7 @@ class MessageService {
           latestTransaction.id
         );
         return {
-          content:
-            result.response.content +
-            " Thanks for the context! Is there anything else I can help you with?",
+          content: result.response.content,
         };
       }
     }
