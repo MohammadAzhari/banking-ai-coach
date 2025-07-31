@@ -1,17 +1,19 @@
-import transactionService from '../transaction/service';
-import aiService from '../ai/service';
-import reportsService from '../reports/service';
-import { prisma } from '../../configs/db'
-import { whatsappService } from '../whatsapp/service';
+import transactionService from "../transaction/service";
+import aiService from "../ai/service";
+import reportsService from "../reports/service";
+import { prisma } from "../../configs/db";
+import { whatsappService } from "../whatsapp/service";
 
 class MessageService {
-
-async sendMessage(userId: string, data: { content: string, options?: string[] }): Promise<void> {
+  async sendMessage(
+    userId: string,
+    data: { content: string; options?: string[] }
+  ): Promise<void> {
     try {
       // Fetch user from database to get WhatsApp ID
       const user = await prisma.user.findUnique({
         where: { id: userId },
-        select: { whatsAppId: true, name: true }
+        select: { whatsAppId: true, name: true },
       });
 
       if (!user) {
@@ -22,14 +24,23 @@ async sendMessage(userId: string, data: { content: string, options?: string[] })
         throw new Error(`User ${userId} does not have a WhatsApp ID`);
       }
 
-      console.log(`Sending message to user ${userId} (WhatsApp: ${user.whatsAppId})`);
+      await this.storeMessage({
+        userId,
+        message: data.content,
+        isFromAi: true,
+        options: data.options,
+      });
+
+      console.log(
+        `Sending message to user ${userId} (WhatsApp: ${user.whatsAppId})`
+      );
 
       // Check if we need to send buttons or just text
       if (data.options && data.options.length > 0) {
         // Send interactive button message
         const buttons = data.options.slice(0, 3).map((option, index) => ({
           id: `option_${index}`,
-          title: option.substring(0, 20) // WhatsApp button limit is 20 chars
+          title: option.substring(0, 20), // WhatsApp button limit is 20 chars
         }));
 
         await whatsappService.sendButtonMessage(
@@ -39,15 +50,12 @@ async sendMessage(userId: string, data: { content: string, options?: string[] })
         );
       } else {
         // Send regular text message
-        await whatsappService.sendMessage(
-          user.whatsAppId,
-          data.content
-        );
+        await whatsappService.sendMessage(user.whatsAppId, data.content);
       }
 
-      console.log('Message sent successfully');
+      console.log("Message sent successfully");
     } catch (error) {
-      console.error('Error sending WhatsApp message:', error);
+      console.error("Error sending WhatsApp message:", error);
       throw error;
     }
   }
@@ -55,62 +63,89 @@ async sendMessage(userId: string, data: { content: string, options?: string[] })
   async onReceiveMessage(userId: string, messageText: string): Promise<void> {
     try {
       console.log(`Receiving message from user ${userId}: "${messageText}"`);
-      
+
+      await this.storeMessage({
+        userId,
+        message: messageText,
+        isFromAi: false,
+      });
+
       // Use simplified transaction service method
       const response = await this.processUserMessage(userId, messageText);
 
       if (!response) {
-        throw new Error('No response generated');
+        throw new Error("No response generated");
       }
-      
-      await this.sendMessage(userId,response);
-      
+
+      await this.sendMessage(userId, response);
     } catch (error) {
-      console.error('Error processing received message:', error);
-      await this.sendMessage(userId,{
-        content: "I encountered an error processing your message. Please try again.",
+      console.error("Error processing received message:", error);
+      await this.sendMessage(userId, {
+        content:
+          "I encountered an error processing your message. Please try again.",
       });
     }
   }
 
-  async processUserMessage(userId: string, userMessage: string): Promise<{ content: string; options?: string[] } | null> {
+  async processUserMessage(
+    userId: string,
+    userMessage: string
+  ): Promise<{ content: string; options?: string[] } | null> {
     const latestTransaction = await prisma.transaction.findFirst({
       where: {
         userId,
       },
-      orderBy: { date: 'desc' },
+      orderBy: { date: "desc" },
     });
 
     if (latestTransaction && !latestTransaction.isConversationClosed) {
       // Transaction is open - check user message and extract context
-      const result = await aiService.extractContextFromMessage(latestTransaction.id, userMessage);
-      
+      const result = await aiService.extractContextFromMessage(
+        latestTransaction.id,
+        userMessage
+      );
+
       if (!result) {
         return {
-          content: "I'm having trouble understanding your message. Could you please rephrase it?",
-          options: ["Help with my recent transaction", "Ask something else"]
+          content:
+            "I'm having trouble understanding your message. Could you please rephrase it?",
+          options: ["Help with my recent transaction", "Ask something else"],
         };
       }
 
-      await transactionService.updateTransactionResponseId(latestTransaction.id, result.response.responseId);
+      await transactionService.updateTransactionResponseId(
+        latestTransaction.id,
+        result.response.responseId
+      );
 
       if (!result.isRelated) {
         return {
-          content: `I notice you have an ongoing conversation about your $${latestTransaction.amount} transaction at ${latestTransaction.storeName || 'Unknown'}. Your message seems unrelated. Would you like to close that conversation?`,
-          options: ["Yes, close it", "No, continue previous", "Help with both"]
+          content: `I notice you have an ongoing conversation about your $${
+            latestTransaction.amount
+          } transaction at ${
+            latestTransaction.storeName || "Unknown"
+          }. Your message seems unrelated. Would you like to close that conversation?`,
+          options: ["Yes, close it", "No, continue previous", "Help with both"],
         };
       }
 
-      await transactionService.updateTransactionContext(latestTransaction.id, result.context);
+      await transactionService.updateTransactionContext(
+        latestTransaction.id,
+        result.context
+      );
 
       if (result.needFurtherInfo) {
         // Update context and send response asking for more info
         return result.response;
       } else {
         // Close transaction and update context
-        await transactionService.closeTransactionConversation(latestTransaction.id);
+        await transactionService.closeTransactionConversation(
+          latestTransaction.id
+        );
         return {
-          content: result.response.content + " Thanks for the context! Is there anything else I can help you with?",
+          content:
+            result.response.content +
+            " Thanks for the context! Is there anything else I can help you with?",
         };
       }
     }
@@ -122,11 +157,11 @@ async sendMessage(userId: string, data: { content: string, options?: string[] })
         prisma.report.findMany({
           where: {
             userId,
-            type: 'SHORT'
+            type: "SHORT",
           },
-          orderBy: { createdAt: 'desc' },
-          take: 2
-        })
+          orderBy: { createdAt: "desc" },
+          take: 2,
+        }),
       ]);
 
       const response = await aiService.generateNaturalMessageResponse(
@@ -137,17 +172,38 @@ async sendMessage(userId: string, data: { content: string, options?: string[] })
       );
 
       if (!response) {
-        throw new Error('No response generated');
+        throw new Error("No response generated");
       }
 
       return {
-        content: response
+        content: response,
       };
     } catch (error) {
-      console.error('Error handling natural message:', error);
+      console.error("Error handling natural message:", error);
       return {
-        content: "I encountered an error processing your message. Please try again."
+        content:
+          "I encountered an error processing your message. Please try again.",
       };
+    }
+  }
+
+  private async storeMessage(data: {
+    userId: string;
+    message: string;
+    isFromAi: boolean;
+    options?: string[];
+  }) {
+    try {
+      await prisma.message.create({
+        data: {
+          userId: data.userId,
+          message: data.message,
+          isFromAi: data.isFromAi,
+          options: data.options ? JSON.stringify(data.options) : undefined,
+        },
+      });
+    } catch (error: any) {
+      console.error("Error storing message:", error);
     }
   }
 }

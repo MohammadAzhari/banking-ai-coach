@@ -11,9 +11,7 @@ class AIService {
     });
   }
 
-  async generateContextQuestionForTransaction(
-    transactionId: string
-  ): Promise<{
+  async generateContextQuestionForTransaction(transactionId: string): Promise<{
     content: string;
     options: string[];
     responseId: string;
@@ -25,6 +23,14 @@ class AIService {
       });
 
       if (!transaction || transaction.type !== "DEBIT") {
+        await prisma.transaction.update({
+          where: {
+            id: transaction?.id,
+          },
+          data: {
+            isConversationClosed: true,
+          },
+        });
         return null;
       }
 
@@ -77,7 +83,7 @@ class AIService {
 
         Another example for $120 at "Target" (first time this month):
         Content: "Great to see you shopping at Target! $120 is quite a haul. I'd love to know what brought you there today?"
-        Options: ["Monthly household essentials", "Back-to-school shopping", "Home improvement project", "Unexpected need came up"]`;
+        Options: ["Monthly household essentials", "Back-to-school shopping", "Home improvement project", "Unexpected need came up"] IMPORTANT NOTE: """""Make it max 20 chars""""`;
 
       const userPrompt = `User just made a transaction:
         - Amount: $${transaction.amount}
@@ -454,9 +460,12 @@ class AIService {
         - Focus on being helpful and supportive`;
 
       let contextInfo = "";
-      
+
       if (lifeReport) {
-        const lifeBreakdown = lifeReport.categoryBreakdown as Record<string, number>;
+        const lifeBreakdown = lifeReport.categoryBreakdown as Record<
+          string,
+          number
+        >;
         const topCategories = Object.entries(lifeBreakdown)
           .sort(([, a], [, b]) => b - a)
           .slice(0, 3)
@@ -467,9 +476,15 @@ class AIService {
         - Period: ${lifeReport.from.toDateString()} to ${lifeReport.to.toDateString()}
         - Total Transactions: ${lifeReport.totalTransactions}
         - Total Amount: $${lifeReport.totalAmount.toFixed(2)}
-        - Credit: $${lifeReport.creditAmount.toFixed(2)}, Debit: $${lifeReport.debitAmount.toFixed(2)}
+        - Credit: $${lifeReport.creditAmount.toFixed(
+          2
+        )}, Debit: $${lifeReport.debitAmount.toFixed(2)}
         - Top spending categories: ${topCategories}
-        - AI Analysis: ${lifeReport.context ? lifeReport.context.substring(0, 300) + "..." : "No analysis available"}
+        - AI Analysis: ${
+          lifeReport.context
+            ? lifeReport.context.substring(0, 300) + "..."
+            : "No analysis available"
+        }
 
 `;
       }
@@ -478,20 +493,34 @@ class AIService {
         contextInfo += "Recent Short Reports:\n";
         recentShortReports.forEach((report, index) => {
           const breakdown = report.categoryBreakdown as Record<string, number>;
-          const topCategory = Object.entries(breakdown)
-            .sort(([, a], [, b]) => b - a)[0];
-          
-          contextInfo += `        Report ${index + 1} (${report.from.toDateString()} - ${report.to.toDateString()}):
-        - Total: $${report.totalAmount.toFixed(2)} (${report.totalTransactions} transactions)
-        - Top category: ${topCategory ? `${topCategory[0]}: $${topCategory[1].toFixed(2)}` : "N/A"}
-        - AI Context: ${report.context ? report.context.substring(0, 200) + "..." : "No context"}
+          const topCategory = Object.entries(breakdown).sort(
+            ([, a], [, b]) => b - a
+          )[0];
+
+          contextInfo += `        Report ${
+            index + 1
+          } (${report.from.toDateString()} - ${report.to.toDateString()}):
+        - Total: $${report.totalAmount.toFixed(2)} (${
+            report.totalTransactions
+          } transactions)
+        - Top category: ${
+          topCategory
+            ? `${topCategory[0]}: $${topCategory[1].toFixed(2)}`
+            : "N/A"
+        }
+        - AI Context: ${
+          report.context
+            ? report.context.substring(0, 200) + "..."
+            : "No context"
+        }
 
 `;
         });
       }
 
       if (!contextInfo) {
-        contextInfo = "No financial data available yet. User hasn't created any reports.";
+        contextInfo =
+          "No financial data available yet. User hasn't created any reports.";
       }
 
       const userPrompt = `User's Financial Context:

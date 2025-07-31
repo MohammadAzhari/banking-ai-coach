@@ -12,10 +12,11 @@ model User {
   name       String
   balance    Float  @default(0)
   whatsAppId String @map("whatsapp_id")
-  
-  transactions  Transaction[]
-  reports  Report[]
-  
+
+  transactions Transaction[]
+  reports      Report[]
+  messages     Message[]
+
   @@map("users")
 }
 
@@ -31,9 +32,9 @@ model Transaction {
   isConversationClosed Boolean         @default(false) @map("is_conversation_closed")
   isReported           Boolean         @default(false) @map("is_reported")
   latestResponseId     String?         @map("latest_response_id")
-  
+
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+
   @@map("transactions")
 }
 
@@ -48,23 +49,37 @@ enum ReportType {
 }
 
 model Report {
-  id        String   @id @default(uuid())
-  userId    String   @map("user_id")
-  totalTransactions   Int
-  totalAmount   Float
-  creditAmount   Float
-  debitAmount   Float
-  categoryBreakdown   Json
-  from   DateTime
-  to   DateTime
-  type      ReportType
-  context   String?
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-  
+  id                String     @id @default(uuid())
+  userId            String     @map("user_id")
+  totalTransactions Int
+  totalAmount       Float
+  creditAmount      Float
+  debitAmount       Float
+  categoryBreakdown Json
+  from              DateTime
+  to                DateTime
+  type              ReportType
+  context           String?
+  createdAt         DateTime   @default(now()) @map("created_at")
+  updatedAt         DateTime   @updatedAt @map("updated_at")
+
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+
   @@map("reports")
 }
 
+model Message {
+  id      String  @id @default(uuid())
+  userId  String  @map("user_id")
+  message String
+  options String?
 
+  isFromAi Boolean @default(false)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("messages")
+}
