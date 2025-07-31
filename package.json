@@ -4,7 +4,7 @@
   "description": "AI coach to help users understand and optimize their spending",
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && npm run db:generate",
     "start": "node dist/index.js",
     "dev": "ts-node src/index.ts",
     "watch": "nodemon --exec ts-node src/index.ts",
