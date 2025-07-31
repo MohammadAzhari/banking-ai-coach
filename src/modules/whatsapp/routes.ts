@@ -12,7 +12,6 @@ async function getUserByWhatsAppId(whatsAppId: string): Promise<string | null> {
     // Find existing user by their WhatsApp ID (phone number)
     const existingUser = await prisma.user.findFirst({
       where: { whatsAppId },
-      select: { id: true }, // Return the UUID
     });
 
     if (existingUser) {
