@@ -29,7 +29,7 @@ async function main() {
       where: { id: AZHARI_TEST_USER_ID },
       update: {
         name: "Azhari",
-        whatsAppId: "966503290793",
+        whatsAppId: "249928737001",
       },
       create: {
         id: AZHARI_TEST_USER_ID,
