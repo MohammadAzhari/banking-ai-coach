@@ -20,7 +20,7 @@ const PORT = process.env.PORT || 3000;
 app.use(helmet());
 app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname, "public")));
+app.use(express.static(path.join(__dirname, "..", "public")));
 
 // Routes
 app.use("/transactions", userMiddleware, transactionRoutes);
@@ -41,7 +41,7 @@ app.get("/health", (req, res) => {
 
 // Serve transaction.html at /test
 app.get("/test", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "transaction.html"));
+  res.sendFile(path.join(__dirname, "..", "public", "transaction.html"));
 });
 
 // Root endpoint
