@@ -5,11 +5,13 @@ config({ override: true, path: ".env" });
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
+import path from "path";
 import transactionRoutes from "./modules/transaction/routes";
 import messageRoutes from "./modules/messages/routes";
 import reportsRoutes from "./modules/reports/routes";
 import whatsappRoutes from "./modules/whatsapp/routes";
 import userMiddleware from "./middleware/userMiddleware";
+import userRoutes from "./modules/user/routes";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -18,12 +20,14 @@ const PORT = process.env.PORT || 3000;
 app.use(helmet());
 app.use(cors());
 app.use(express.json());
+app.use(express.static(path.join(__dirname, "public")));
 
 // Routes
 app.use("/transactions", userMiddleware, transactionRoutes);
 app.use("/messages", userMiddleware, messageRoutes);
 app.use("/reports", userMiddleware, reportsRoutes);
 app.use("/whatsapp", whatsappRoutes);
+app.use("/users", userRoutes);
 
 // Health check endpoint
 app.get("/health", (req, res) => {
@@ -33,6 +37,11 @@ app.get("/health", (req, res) => {
     service: "Banking AI Coach",
     whatsapp: "Connected", // Optional: add WhatsApp status
   });
+});
+
+// Serve transaction.html at /test
+app.get("/test", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "transaction.html"));
 });
 
 // Root endpoint

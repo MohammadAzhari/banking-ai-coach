@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Send Transaction</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 500px; margin: 40px auto; background: #f7f7f7; padding: 24px; border-radius: 10px; }
+    label { display: block; margin-top: 16px; font-weight: bold; }
+    select, input[type="number"], input[type="text"], input[type="date"] { width: 100%; padding: 8px; margin-top: 4px; border-radius: 4px; border: 1px solid #ccc; }
+    button { margin-top: 24px; padding: 12px 18px; background: #007bff; color: #fff; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; }
+    button:disabled { background: #aaa; }
+    .message { margin-top: 20px; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h2>Send Transaction</h2>
+  <form id="transactionForm">
+    <label for="user">User</label>
+    <select id="user" required></select>
+
+    <label for="amount">Amount</label>
+    <input type="number" id="amount" min="0.01" step="0.01" required />
+
+    <label for="category">Category</label>
+    <select id="category" required></select>
+
+    <label for="type">Type</label>
+    <select id="type" required>
+      <option value="CREDIT">CREDIT</option>
+      <option value="DEBIT">DEBIT</option>
+    </select>
+
+    <label for="storeName">Store Name</label>
+    <input type="text" id="storeName" placeholder="Optional" />
+
+    <label for="date">Date</label>
+    <input type="date" id="date" />
+
+    <button type="submit">Send Transaction</button>
+    <div class="message" id="message"></div>
+  </form>
+
+  <script>
+    const categoryOptions = [
+      "food", "transportation", "entertainment", "shopping", "bills", "health", "education", "travel", "other"
+    ];
+
+    // Populate category dropdown
+    const categorySelect = document.getElementById('category');
+    categoryOptions.forEach(cat => {
+      const opt = document.createElement('option');
+      opt.value = cat;
+      opt.textContent = cat.charAt(0).toUpperCase() + cat.slice(1);
+      categorySelect.appendChild(opt);
+    });
+
+    // Populate user dropdown from API
+    fetch('/users')
+      .then(res => res.json())
+      .then(users => {
+        const userSelect = document.getElementById('user');
+        users.forEach(u => {
+          const opt = document.createElement('option');
+          opt.value = u.id;
+          opt.textContent = u.name;
+          userSelect.appendChild(opt);
+        });
+      });
+
+    // Handle form submit
+    document.getElementById('transactionForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const messageDiv = document.getElementById('message');
+      messageDiv.textContent = '';
+      const userId = document.getElementById('user').value;
+      const amount = parseFloat(document.getElementById('amount').value);
+      const category = document.getElementById('category').value;
+      const type = document.getElementById('type').value;
+      const storeName = document.getElementById('storeName').value;
+      const date = document.getElementById('date').value;
+      
+      // Send as this user, using a custom endpoint (simulate login as user)
+      const res = await fetch('/transactions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-User-Id': userId // Optionally, if your backend supports custom header for user
+        },
+        body: JSON.stringify({ amount, category, type, storeName, date })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        messageDiv.style.color = 'green';
+        messageDiv.textContent = data.message || 'Transaction sent!';
+        this.reset();
+      } else {
+        messageDiv.style.color = 'red';
+        messageDiv.textContent = data.error || 'Failed to send transaction.';
+      }
+    });
+  </script>
+</body>
+</html>
