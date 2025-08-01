@@ -5,6 +5,7 @@ export interface WhatsAppMessage {
   body: string;
   timestamp: string;
   messageId: string;
+  profileName: string;
 }
 
 export interface WebhookPayload {

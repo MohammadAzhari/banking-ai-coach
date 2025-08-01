@@ -74,6 +74,7 @@ export class WhatsAppService {
     const changes = entry?.changes?.[0];
     const value = changes?.value;
     const message = value?.messages?.[0];
+    const profileName = value?.contacts?.[0].profile.name;
 
     if (message) {
       // Handle both text messages and button responses
@@ -94,6 +95,7 @@ export class WhatsAppService {
         body: messageBody,
         timestamp: message.timestamp,
         messageId: message.id,
+        profileName,
       };
     }
     return null;

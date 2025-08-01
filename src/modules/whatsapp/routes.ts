@@ -3,6 +3,7 @@ import { whatsappService } from "./service";
 import { whatsappConfig } from "./config";
 import messageService from "../messages/service";
 import { prisma } from "../../configs/db";
+import { userService } from "../user/service";
 
 const router = Router();
 
@@ -64,12 +65,19 @@ router.post("/webhook", async (req: Request, res: Response) => {
       const userId = await getUserByWhatsAppId(message.from);
 
       if (!userId) {
-        // TODO: Implement user registration flow
-        // For now, send a message asking them to register
-        console.error("No user found for WhatsApp ID:", message.from);
+        // Create user and notify
+        const newUser = await userService.createUserFromWhatsApp({
+          name: message.profileName,
+          whatsAppId: message.from,
+        });
+        console.log("Created new user for WhatsApp ID:", message.from);
         await whatsappService.sendMessage(
-          message.from,
-          "Welcome! It looks like you're not registered yet. Please contact support to set up your account."
+          newUser.whatsAppId,
+          `
+          هلا ${message.profileName}!
+          حسابك مفتوح الحين!
+          تقدر تستخدم رشد فنتك
+          `
         );
       } else {
         // Process the message using MessageService with the user's UUID
