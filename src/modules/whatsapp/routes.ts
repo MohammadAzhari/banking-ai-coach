@@ -5,7 +5,6 @@ import messageService from "../messages/service";
 import { prisma } from "../../configs/db";
 import { userService } from "../user/service";
 import { transactions2 } from "../../data/transactions2";
-import { TransactionType } from "@prisma/client";
 import reportsService from "../reports/service";
 
 const router = Router();
@@ -85,7 +84,7 @@ router.post("/webhook", async (req: Request, res: Response) => {
           });
         }
 
-        await reportsService.generateShortReport(newUser.id);
+        await reportsService.generateShortReport(newUser.id, true);
 
         await whatsappService.sendMessage(
           newUser.whatsAppId,

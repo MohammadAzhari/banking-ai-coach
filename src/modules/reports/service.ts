@@ -11,7 +11,10 @@ import {
 import messageService from "../messages/service";
 
 class ReportsService {
-  async generateShortReport(userId: string): Promise<Report> {
+  async generateShortReport(
+    userId: string,
+    dontSendToUser?: boolean
+  ): Promise<Report> {
     // Fetch unreported transactions
     const unreportedTransactions =
       await transactionService.getUnreportedTransactionsByUserId(userId);
@@ -44,7 +47,8 @@ class ReportsService {
     // Generate AI context for the report in background
     this.generateReportContextInBackground(
       shortReport.id,
-      unreportedTransactions
+      unreportedTransactions,
+      dontSendToUser
     );
 
     // Update or create life report in background
@@ -97,7 +101,8 @@ class ReportsService {
 
   private async generateReportContextInBackground(
     reportId: string,
-    transactions: Transaction[]
+    transactions: Transaction[],
+    dontSendToUser?: boolean
   ): Promise<void> {
     try {
       const context = await aiService.generateContextForReport(
@@ -118,9 +123,11 @@ class ReportsService {
         context
       );
 
-      messageService.sendMessage(report.userId, {
-        content: summarizedContext!,
-      });
+      if (!dontSendToUser) {
+        messageService.sendMessage(report.userId, {
+          content: summarizedContext!,
+        });
+      }
     } catch (error) {
       console.error("Error generating report context:", error);
     }

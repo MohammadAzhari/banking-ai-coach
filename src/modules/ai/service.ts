@@ -328,7 +328,6 @@ class AIService {
           { role: "user", content: userPrompt },
         ],
         temperature: 0.2,
-        max_tokens: 1000,
       });
 
       return response.choices[0]?.message?.content || null;
@@ -367,7 +366,6 @@ class AIService {
           },
         ],
         temperature: 0.3,
-        max_tokens: 500,
       });
 
       return response.choices[0]?.message?.content || null;
