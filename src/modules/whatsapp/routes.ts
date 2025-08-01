@@ -80,7 +80,7 @@ router.post("/webhook", async (req: Request, res: Response) => {
               ...transaction,
               userId: newUser.id,
               isConversationClosed: true,
-              type: transaction.type as TransactionType,
+              type: "DEBIT",
             },
           });
         }
