@@ -4,6 +4,9 @@ import { whatsappConfig } from "./config";
 import messageService from "../messages/service";
 import { prisma } from "../../configs/db";
 import { userService } from "../user/service";
+import { transactions2 } from "../../data/transactions2";
+import { TransactionType } from "@prisma/client";
+import reportsService from "../reports/service";
 
 const router = Router();
 
@@ -70,13 +73,41 @@ router.post("/webhook", async (req: Request, res: Response) => {
           name: message.profileName,
           whatsAppId: message.from,
         });
-        console.log("Created new user for WhatsApp ID:", message.from);
+
+        for (const transaction of transactions2) {
+          await prisma.transaction.create({
+            data: {
+              ...transaction,
+              userId: newUser.id,
+              isConversationClosed: true,
+              type: transaction.type as TransactionType,
+            },
+          });
+        }
+
+        await reportsService.generateShortReport(newUser.id);
+
         await whatsappService.sendMessage(
           newUser.whatsAppId,
           `
-          هلا ${message.profileName}!
-          حسابك مفتوح الحين!
-          تقدر تستخدم رشد فنتك
+        ياهلا والله ${message.profileName}! 🤗
+        
+        مبروك! فتحنا لك حسابك بنجاح 🎉  
+        الحين تقدر تبدأ تستخدم رشد فنتك وتخلّي قراراتك المالية أذكى وأسهل 💸✨
+        
+        ولو احتجت أي شي، إحنا دايم بالخدمة ❤️
+        `
+        );
+
+        await whatsappService.sendMessage(
+          newUser.whatsAppId,
+          `
+          بمناسبة مشاركتنا في الهاكاثون، نحن متحمسين نوريكم كيف يشتغل ذكاؤنا المالي!
+عشان تقدروا تجربوا قدراته، اضغطوا على الرابط أدناه وابدأوا بمحاكاة عمليات شراء.
+كمان، تقدروا تستشيروه مباشرة حول سجلكم الشرائي — أضفنا عمليات شراء افتراضية عشان تسهّل عليكم التجربة.
+          
+
+https://banking-ai-coach.onrender.com/test/${newUser.id}
           `
         );
       } else {
