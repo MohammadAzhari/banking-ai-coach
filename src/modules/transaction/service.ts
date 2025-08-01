@@ -17,6 +17,7 @@ class TransactionService {
           category: data.category,
           type: data.type,
           storeName: data.storeName,
+          date: data.date ? new Date(data.date) : undefined,
         },
       });
 
