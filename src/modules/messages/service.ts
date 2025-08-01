@@ -74,6 +74,11 @@ class MessageService {
       isFromAi: false,
     });
 
+    const randomWaitingMessage =
+      waitingMessages[Math.floor(Math.random() * waitingMessages.length)];
+
+    await whatsappService.sendMessage(user.whatsAppId, randomWaitingMessage);
+
     // Use simplified transaction service method
     const response = await this.processUserMessage(messsage);
 
@@ -87,11 +92,6 @@ class MessageService {
   async processUserMessage(
     message: Message
   ): Promise<{ content: string; options?: string[] } | null> {
-    const randomWaitingMessage =
-      waitingMessages[Math.floor(Math.random() * waitingMessages.length)];
-
-    await whatsappService.sendMessage(message.userId, randomWaitingMessage);
-
     const latestTransaction = await prisma.transaction.findFirst({
       where: {
         userId: message.userId,
