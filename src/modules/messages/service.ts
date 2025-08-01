@@ -101,11 +101,7 @@ class MessageService {
       );
 
       if (!result) {
-        return {
-          content:
-            "I'm having trouble understanding your message. Could you please rephrase it?",
-          options: ["Help with my recent transaction", "Ask something else"],
-        };
+        return null;
       }
 
       await transactionService.updateTransactionResponseId(
@@ -115,12 +111,8 @@ class MessageService {
 
       if (!result.isRelated) {
         return {
-          content: `I notice you have an ongoing conversation about your $${
-            latestTransaction.amount
-          } transaction at ${
-            latestTransaction.storeName || "Unknown"
-          }. Your message seems unrelated. Would you like to close that conversation?`,
-          options: ["Yes, close it", "No, continue previous", "Help with both"],
+          content: result.response.content,
+          options: result.response.options,
         };
       }
 

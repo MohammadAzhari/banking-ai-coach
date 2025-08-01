@@ -1,4 +1,4 @@
-[
+export const mockTransactions1 = [
   {
     amount: 13.99,
     category: "food",

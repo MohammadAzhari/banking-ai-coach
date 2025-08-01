@@ -514,7 +514,7 @@ class AIService {
         - Keep responses concise but informative
         - Focus on being helpful and supportive
         - Make the message in Arabic using a Saudi dialect
-        - Make the message short and easy to read`;
+        - Make the message short and easy to read max 300 words`;
 
       let contextInfo = `
           User Info:
@@ -571,7 +571,7 @@ class AIService {
         }
         - AI Context: ${
           report.context
-            ? report.context.substring(0, 200) + "..."
+            ? report.context.substring(0, 300) + "..."
             : "No context"
         }
 
@@ -598,7 +598,6 @@ class AIService {
           { role: "user", content: userPrompt },
         ],
         temperature: 0.5,
-        max_output_tokens: 200,
         previous_response_id: latestResponseId,
         store: true,
       });
