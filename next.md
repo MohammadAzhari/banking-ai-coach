@@ -1,5 +1,5 @@
-- handle the case of follow up messages with no transactions
-- store messages in DB
-- deploy
-- limit the option to be 20 letters
-- make the ai talk in arabic
+- enhance the design of the page
+- make the test page takes the userId or {all} for admin
+- add image in meta tags
+- add seed transaction when register
+- improve the registeration message with additional info

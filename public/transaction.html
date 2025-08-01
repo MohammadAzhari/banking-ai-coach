@@ -1,46 +1,141 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Send Transaction</title>
-  <style>
-    body { font-family: Arial, sans-serif; max-width: 500px; margin: 40px auto; background: #f7f7f7; padding: 24px; border-radius: 10px; }
-    label { display: block; margin-top: 16px; font-weight: bold; }
-    select, input[type="number"], input[type="text"], input[type="date"] { width: 100%; padding: 8px; margin-top: 4px; border-radius: 4px; border: 1px solid #ccc; }
-    button { margin-top: 24px; padding: 12px 18px; background: #007bff; color: #fff; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; }
-    button:disabled { background: #aaa; }
-    .message { margin-top: 20px; font-weight: bold; }
-  </style>
-</head>
-<body>
-  <h2>Send Transaction</h2>
-  <form id="transactionForm">
-    <label for="user">User</label>
-    <select id="user" required></select>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <label for="amount">Amount</label>
-    <input type="number" id="amount" min="0.01" step="0.01" required />
+    <title>Rushd</title>
+    <meta
+      name="description"
+      content="This is a short description of the page."
+    />
 
-    <label for="category">Category</label>
-    <select id="category" required></select>
+    <!-- Open Graph Meta Tags for Social Sharing -->
+    <meta property="og:title" content="" />
+    <meta property="og:description" content="" />
+    <meta property="og:image" content="/icon.png" />
+    <meta property="og:url" content="" />
+    <meta property="og:type" content="website" />
 
-    <label for="type">Type</label>
-    <select id="type" required>
-      <option value="CREDIT">CREDIT</option>
-      <option value="DEBIT" selected>DEBIT</option>
-    </select>
+    <!-- Favicon -->
+    <link rel="icon" href="/icon.png" type="image/png" />
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap");
 
-    <label for="storeName">Store Name</label>
-    <input type="text" id="storeName" placeholder="Optional" />
+      body {
+        font-family: "Poppins", sans-serif;
+        background-color: #0d0d0d;
+        color: #e0e0e0;
+        max-width: 600px;
+        margin: 40px auto;
+        padding: 32px;
+        border-radius: 12px;
+        background-image: linear-gradient(to bottom right, #1a1a1a, #121212);
+        border: 1px solid #333;
+      }
 
-    <label for="date">Date & Time</label>
-    <input type="datetime-local" id="date" placeholder="Optional" />
+      h2 {
+        text-align: center;
+        font-size: 24px;
+        color: #00ffff;
+        margin-bottom: 24px;
+      }
 
-    <button type="submit">Send Transaction</button>
-    <div class="message" id="message"></div>
-  </form>
+      label {
+        display: block;
+        margin-top: 18px;
+        font-weight: 600;
+        color: #ff00cc;
+      }
 
-  <script src="transaction.js"></script>
-</body>
+      select,
+      input[type="number"],
+      input[type="text"],
+      input[type="date"],
+      input[type="datetime-local"] {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 10px 12px;
+        margin-top: 6px;
+        border-radius: 6px;
+        border: 1px solid #444;
+        background-color: #1e1e1e;
+        color: #e0e0e0;
+        font-size: 15px;
+      }
+
+      select:focus,
+      input:focus {
+        outline: none;
+        border-color: #00ffff;
+        background-color: #222;
+      }
+
+      button {
+        margin-top: 30px;
+        width: 100%;
+        padding: 14px;
+        background: #00ffff;
+        color: #000;
+        border: none;
+        border-radius: 6px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.3s ease;
+      }
+
+      button:hover {
+        background: #00e6e6;
+      }
+
+      button:disabled {
+        background: #555;
+        color: #aaa;
+        cursor: not-allowed;
+      }
+
+      .message {
+        margin-top: 20px;
+        font-weight: 600;
+        text-align: center;
+        color: #ffcc00;
+      }
+
+      ::placeholder {
+        color: #888;
+        opacity: 0.8;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>Send Transaction</h2>
+    <form id="transactionForm">
+      <label for="user">User</label>
+      <select id="user" required></select>
+
+      <label for="amount">Amount</label>
+      <input type="number" id="amount" min="0.01" step="0.01" required />
+
+      <label for="category">Category</label>
+      <select id="category" required></select>
+
+      <label for="type">Type</label>
+      <select id="type" required>
+        <option value="CREDIT">CREDIT</option>
+        <option value="DEBIT" selected>DEBIT</option>
+      </select>
+
+      <label for="storeName">Store Name</label>
+      <input type="text" id="storeName" placeholder="Optional" />
+
+      <label for="date">Date & Time</label>
+      <input type="datetime-local" id="date" placeholder="Optional" />
+
+      <button type="submit">Send Transaction</button>
+      <div class="message" id="message"></div>
+    </form>
+
+    <script src="transaction.js"></script>
+  </body>
 </html>
