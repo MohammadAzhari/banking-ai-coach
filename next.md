@@ -1,5 +1,5 @@
 - enhance the design of the page
-- make the test page takes the userId or {all} for admin
 - add image in meta tags
+- make the test page takes the userId or {all} for admin
 - add seed transaction when register
 - improve the registeration message with additional info

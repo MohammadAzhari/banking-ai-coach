@@ -39,8 +39,8 @@ app.get("/health", (req, res) => {
   });
 });
 
-// Serve transaction.html at /test
-app.get("/test", (req, res) => {
+// Serve transaction.html at /test/:id
+app.get("/test/:id", (req, res) => {
   res.sendFile(path.join(__dirname, "..", "public", "transaction.html"));
 });
 
