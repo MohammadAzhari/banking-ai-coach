@@ -4,6 +4,7 @@ import reportsService from "../reports/service";
 import { prisma } from "../../configs/db";
 import { whatsappService } from "../whatsapp/service";
 import { Message } from "@prisma/client";
+import { waitingMessages } from "./types";
 
 class MessageService {
   async sendMessage(
@@ -86,6 +87,11 @@ class MessageService {
   async processUserMessage(
     message: Message
   ): Promise<{ content: string; options?: string[] } | null> {
+    const randomWaitingMessage =
+      waitingMessages[Math.floor(Math.random() * waitingMessages.length)];
+
+    await whatsappService.sendMessage(message.userId, randomWaitingMessage);
+
     const latestTransaction = await prisma.transaction.findFirst({
       where: {
         userId: message.userId,
@@ -134,6 +140,7 @@ class MessageService {
         };
       }
     }
+
     const [lifeReport, recentShortReports] = await Promise.all([
       reportsService.getLifeReportByUserId(message.userId),
       prisma.report.findMany({
